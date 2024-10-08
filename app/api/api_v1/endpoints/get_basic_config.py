@@ -2,7 +2,7 @@
 This file contains the FastAPI endpoint for getting the basic configuration of the Blink API.
 This info is required for config rest of the modules
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0903
 
 from fastapi import APIRouter
 from pydantic import BaseModel

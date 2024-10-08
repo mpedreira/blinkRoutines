@@ -1,7 +1,7 @@
 """
     This module is responsible for sending the 2FA code to the Blink API.
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0903
 
 from fastapi import APIRouter
 from pydantic import BaseModel

@@ -1,5 +1,5 @@
 """ This module contains the endpoint for updating the thumbnail of an owl. """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0801
 
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI

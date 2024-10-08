@@ -1,5 +1,5 @@
 """ This module creates the API path /update_thumb/{camera} """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0801
 
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI

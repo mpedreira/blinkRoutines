@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0301
+# pylint: disable=C0301,R0904
 # -*- coding: utf-8 -*-
 """Module for using Blink Cameras through API"""
 
@@ -41,7 +41,6 @@ class BlinkAPI (Blink):
         self.basic_info = {}
         self.basic_info['account'] = {}
         self.basic_info['account']['tier'] = 'prod'
-        return None
 
     def __set_token__(self):
         self.set_tier(self.config.session['TIER'])
