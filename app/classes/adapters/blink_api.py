@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0301,R0904
+# pylint: disable=C0301
 # -*- coding: utf-8 -*-
 """Module for using Blink Cameras through API"""
 
@@ -44,7 +44,7 @@ class BlinkAPI (Blink):
         self.set_token_auth(self.config.session['TOKEN_AUTH'])
         self.set_client_id(self.config.session['CLIENT_ID'])
 
-    def get_basics(self):
+    def __get_basics__(self):
         """
             Gets the basic information of the blink account
         """
@@ -183,9 +183,9 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
-    def get_response_to_request(self, http_instance):
+    def __get_response_to_request__(self, http_instance):
         """
         Args:
             http_instance (class): this is the class used for the http request
@@ -244,9 +244,9 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.get_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
-    def get_newtwork_id_from_camera(self, camera_id):
+    def __get_newtwork_id_from_camera__(self, camera_id):
         """
             Gets the network ID from the camera ID
 
@@ -280,7 +280,7 @@ class BlinkAPI (Blink):
         Returns:
             _type_: _description_
         """
-        network_id = self.get_newtwork_id_from_camera(camera_id)
+        network_id = self.__get_newtwork_id_from_camera__(camera_id)
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
@@ -289,7 +289,7 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def disarm_network(self, network_id):
         """
@@ -310,7 +310,7 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def get_server(self):
         """
@@ -341,7 +341,7 @@ class BlinkAPI (Blink):
         })
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def get_networks(self):
         """
@@ -403,7 +403,7 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.get_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def set_thumbnail(self, camera_id):
         """
@@ -416,7 +416,7 @@ class BlinkAPI (Blink):
             dict : This responses a json with the status_code, 
             the response of the server(blank if has no json format) and if is_success
         """
-        network_id = self.get_newtwork_id_from_camera(camera_id)
+        network_id = self.__get_newtwork_id_from_camera__(camera_id)
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
@@ -425,7 +425,7 @@ class BlinkAPI (Blink):
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def set_owl_thumbnail(self, owl_id):
         """
@@ -438,7 +438,7 @@ class BlinkAPI (Blink):
             dict : This responses a json with the status_code, 
             the response of the server(blank if has no json format) and if is_success
         """
-        network_id = self.get_newtwork_id_from_camera(owl_id)
+        network_id = self.__get_newtwork_id_from_camera__(owl_id)
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
@@ -448,7 +448,7 @@ class BlinkAPI (Blink):
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
         print(http_instance.response.text)
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
 
     def send_2fa(self, pin):
         """
@@ -472,4 +472,4 @@ class BlinkAPI (Blink):
         print(endpoint)
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return self.get_response_to_request(http_instance)
+        return self.__get_response_to_request__(http_instance)
