@@ -1,7 +1,7 @@
 """
 This file contains the endpoint to arm a network.
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0801
 
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI

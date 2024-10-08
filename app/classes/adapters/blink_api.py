@@ -34,10 +34,6 @@ class BlinkAPI (Blink):
         self.client_id = ''
         self.account_id = ''
         self.token_auth = ''
-        self.owls = []
-        self.networks = []
-        self.sync_modules = []
-        self.cameras = []
         self.basic_info = {}
         self.basic_info['account'] = {}
         self.basic_info['account']['tier'] = 'prod'
@@ -263,14 +259,13 @@ class BlinkAPI (Blink):
                 first, tries to get the owls and then, if everything fails,
                 returns ''
         """
-        if not self.cameras:
-            self.get_cameras()
-        for camera in self.cameras:
+
+        cameras = self.get_cameras()
+        for camera in cameras:
             if str(camera['id']) == camera_id:
                 return str(camera['network_id'])
-        if not self.owls:
-            self.get_owls()
-        for owl in self.owls:
+        owls = self.get_owls()
+        for owl in owls:
             if str(owl['id']) == camera_id:
                 return str(owl['network_id'])
         return ''
@@ -356,8 +351,8 @@ class BlinkAPI (Blink):
             list: list of networks in the account
         """
         result = self.get_home_screen_info()
-        self.networks = result['response']['networks']
-        return self.networks
+        response = result['response']['networks']
+        return response
 
     def get_owls(self):
         """
@@ -367,8 +362,8 @@ class BlinkAPI (Blink):
             list: list of owls in the account
         """
         result = self.get_home_screen_info()
-        self.owls = result['response']['owls']
-        return self.owls
+        response = result['response']['owls']
+        return response
 
     def get_sync_modules(self):
         """
@@ -378,8 +373,8 @@ class BlinkAPI (Blink):
             list: list of sync_modules  in the account
         """
         result = self.get_home_screen_info()
-        self.sync_modules = result['response']['sync_modules']
-        return self.sync_modules
+        response = result['response']['sync_modules']
+        return response
 
     def get_cameras(self):
         """
@@ -389,8 +384,8 @@ class BlinkAPI (Blink):
             list: list of cameras  in the account
         """
         result = self.get_home_screen_info()
-        self.cameras = result['response']['cameras']
-        return self.cameras
+        response = result['response']['cameras']
+        return response
 
     def get_home_screen_info(self):
         """
