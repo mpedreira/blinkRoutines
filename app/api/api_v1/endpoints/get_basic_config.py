@@ -7,7 +7,7 @@ This info is required for config rest of the modules
 from fastapi import APIRouter
 from pydantic import BaseModel
 from app.classes.adapters.blink_api import BlinkAPI
-from app.classes.adapters.config_static import ConfigStatic
+from app.classes.adapters.config_aws import ConfigAWS
 
 
 class User(BaseModel):
@@ -35,7 +35,7 @@ def get_config(user: User):
         dict : This responses a json with the status_code, 
             the response of the server(blank if has no json format) and if is_success
     """
-    config_instance = ConfigStatic()
+    config_instance = ConfigAWS()
     config_instance.auth = {}
     config_instance.auth['USER'] = user['username']
     config_instance.auth['PASSWORD'] = user['password']

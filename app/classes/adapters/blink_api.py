@@ -117,7 +117,8 @@ class BlinkAPI (Blink):
         Args:
             since (str, optional): It will return all ocurrences from this date. 
                 Defaults to "2024-07-31T09%3A58%3A14%2B0000".
-            page (str, optional): if it has more than one page, it defines de page to return. Defaults to "1".
+                page (str, optional): if it has more than one page, 
+                it defines de page to return. Defaults to "1".
 
         Returns:
             _type_: _description_

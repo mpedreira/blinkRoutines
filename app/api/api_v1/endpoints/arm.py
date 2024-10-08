@@ -5,7 +5,7 @@ This file contains the endpoint to arm a network.
 
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
-from app.classes.adapters.config_static import ConfigStatic
+from app.classes.adapters.config_aws import ConfigAWS
 
 router = APIRouter()
 """ This creates the new API path /arm/{newtork_id} """
@@ -23,7 +23,7 @@ def arm(newtork_id: int):
         dict : This responses a json with the status_code, 
         the response of the server(blank if has no json format) and if is_success
     """
-    config_instance = ConfigStatic()
+    config_instance = ConfigAWS()
     blink_instance = BlinkAPI(config_instance)
     blink_instance.__set_token__()
     blink_instance.get_server()

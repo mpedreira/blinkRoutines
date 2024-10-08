@@ -6,7 +6,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from app.classes.adapters.blink_api import BlinkAPI
-from app.classes.adapters.config_static import ConfigStatic
+from app.classes.adapters.config_aws import ConfigAWS
 
 
 class Account(BaseModel):
@@ -35,7 +35,7 @@ def send_2fa(account: Account, mfa_code: int):
         dict : This responses a json with the status_code, 
         the response of the server(blank if has no json format) and if is_success
     """
-    config_instance = ConfigStatic()
+    config_instance = ConfigAWS()
     config_instance.auth = {}
     blink_instance = BlinkAPI(config_instance)
     blink_instance.set_tier(account['tier'])

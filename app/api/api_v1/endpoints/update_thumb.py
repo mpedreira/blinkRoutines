@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
-from app.classes.adapters.config_static import ConfigStatic
+from app.classes.adapters.config_aws import ConfigAWS
 
 router = APIRouter()
 """ This creates the new API path /update_thumb/{camera} """
@@ -21,7 +21,7 @@ def update_thumb(camera: int):
         the response of the server(blank if has no json format) and if is_success
     """
     # raise Exception('This is a test exception.')
-    config_instance = ConfigStatic()
+    config_instance = ConfigAWS()
     blink_instance = BlinkAPI(config_instance)
     blink_instance.__set_token__()
     blink_instance.get_server()
