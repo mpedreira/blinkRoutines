@@ -1,0 +1,481 @@
+#!/usr/bin/env python3
+# pylint: disable=C0301
+# -*- coding: utf-8 -*-
+"""Module for using Blink Cameras through API"""
+
+import json
+from app.classes.blink import Blink
+from app.classes.adapters.http_request_standard import HttpRequestStandard
+
+
+class BlinkAPI (Blink):
+    """
+    Class for using Blink Cameras through API. 
+    This class is a subclass of Blink
+
+    Args:
+        Blink (class): parent class
+    """
+
+    def __init__(self, config):
+        """
+        Init method for BlinkAPI
+
+        Args:
+            config (class): 
+                This parameter includes the configuration needed for use this module.
+                It is defined in config_WHATEVER.py in adapters folder
+
+        Returns:
+            None: 
+        """
+        self.config = config
+        self.server = self.config.endpoints['BLINK']
+        self.client_id = ''
+        self.account_id = ''
+        self.token_auth = ''
+        self.owls = []
+        self.networks = []
+        self.sync_modules = []
+        self.cameras = []
+        self.basic_info = {}
+        self.basic_info['account'] = {}
+        self.basic_info['account']['tier'] = 'prod'
+        return None
+
+    def __set_token__(self):
+        self.set_tier(self.config.session['TIER'])
+        self.set_account_id(self.config.session['ACCOUNT_ID'])
+        self.set_token_auth(self.config.session['TOKEN_AUTH'])
+        self.set_client_id(self.config.session['CLIENT_ID'])
+
+    def get_basics(self):
+        """
+            Gets the basic information of the blink account
+        """
+        response = self.get_login()
+        self.basic_info = response['response']
+        self.get_server()
+        self.get_client_id()
+        self.get_account_id()
+
+    def get_client_id(self):
+        """
+            Taking the basic information of the blink account, 
+            gets the client ID
+
+        Returns:
+            int: Returns the client_id that is the identification of 
+            the aplication in the blink account
+        """
+        self.client_id = self.basic_info['account']['client_id']
+        return self.client_id
+
+    def get_account_id(self):
+        """
+            Taking the basic information of the blink account,
+            gets the account ID
+
+        Returns:
+           int : Returns the account_id that is the identification of
+              the account in the blink account
+        """
+        self.account_id = self.basic_info['account']['account_id']
+        return self.account_id
+
+    def get_token_auth(self):
+        """
+            Taking the basic information of the blink account,
+            gets the token auth
+        Returns:
+            str: Returns de API token for the client
+        """
+        self.token_auth = self.basic_info['auth']['token']
+        return self.token_auth
+
+    def set_client_id(self, client_id):
+        """
+            Sets the client ID
+
+        Args:
+            clientID (str): Once you have the client ID, you dont need to 
+             re-login(with 2FA) again until the token expires. You can use
+             the one you created
+
+        Returns:
+            str: Returns the client_id defined
+        """
+        self.client_id = client_id
+        return self.client_id
+
+    def set_token_auth(self, token_auth):
+        """
+            Sets the token auth
+
+        Args:
+            token_auth (str): Once you have the token_auth, you dont need to 
+             re-login(with 2FA) again until the token expires. You can use
+             the one you created
+
+        Returns:
+            str: Returns the token_auth defined
+        """
+        self.token_auth = token_auth
+        return self.token_auth
+
+    def set_account_id(self, account_id):
+        """
+            Sets the account ID
+
+        Args:
+            accountID (str): Once you have the account ID, you dont need to 
+             re-login(with 2FA) again until the token expires. You can use
+             the one you created
+
+        Returns:
+            str: Returns the account_id defined
+        """
+        self.account_id = account_id
+        return self.account_id
+
+    def set_tier(self, tier):
+        """
+            Sets the tier of the account
+
+        Args:
+            tier (str): Tier defined in the basic information of the account
+
+        Returns:
+            str: Returns the tier defined
+        """
+        self.basic_info['account']['tier'] = tier
+        return self.basic_info['account']['tier']
+
+    def __prepare_http_request__(self):
+        """
+            The http requests are almost the same in this integration
+            with this method we prepare the payload for the request
+
+        Returns:
+            list: returns the payload required for http request
+        """
+        payload = {}
+        payload['config'] = self.config
+        payload['headers'] = {
+            'Content-Type': 'application/json'
+        }
+        payload['timeout'] = self.config.timeout
+        payload['data'] = ''
+        payload['auth'] = ''
+        return payload
+
+    def arm_network(self, network_id):
+        """
+            Set to arm one network
+
+        Args:
+            network_id (str): is the identification of the network 
+            you want to arm
+
+        Returns:
+            list: returns the response of the server to the request
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            self.account_id + '/networks/' + network_id + '/state/arm'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
+
+    def get_response_to_request(self, http_instance):
+        """
+        Args:
+            http_instance (class): this is the class used for the http request
+
+        Returns:
+            list: returns a json file with the status_code of the server, if the 
+            response is ok or not and the response of the server. If the response is
+            not a json, it returns the text without format
+        """
+        result = {}
+        result['status_code'] = http_instance.response.status_code
+        result['is_ok'] = http_instance.is_ok_response()
+        try:
+            result['response'] = json.loads(http_instance.response.text)
+        except json.decoder.JSONDecodeError:
+            result['response'] = http_instance.response.text
+        return result
+
+    def get_clip(self, clip_id):
+        """
+            Gets a clip from the server
+
+        Args:
+            clip_id (str): path of the clip
+
+        Returns:
+            bytes: returns the clip in mp4 format
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + clip_id
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        result = http_instance.response.iter_content(chunk_size=1024)
+        return result
+
+    def get_video_events(self, since="2024-07-31T09%3A58%3A14%2B0000", page="1"):
+        """
+            Gets the list of events from the server since a date
+
+        Args:
+            since (str, optional): It will return all ocurrences from this date. 
+                Defaults to "2024-07-31T09%3A58%3A14%2B0000".
+            page (str, optional): if it has more than one page, it defines de page to return. Defaults to "1".
+
+        Returns:
+            _type_: _description_
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            self.account_id+'/media/changed?since='+since+'&page='+page
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        return self.get_response_to_request(http_instance)
+
+    def get_newtwork_id_from_camera(self, camera_id):
+        """
+            Gets the network ID from the camera ID
+
+        Args:
+            camera_id (str): is the identification of the camera 
+                in the blink platform. This is a int number
+
+        Returns:
+            str: returns the network ID of the camera. If it is not found,
+                first, tries to get the owls and then, if everything fails,
+                returns ''
+        """
+        if not self.cameras:
+            self.get_cameras()
+        for camera in self.cameras:
+            if str(camera['id']) == camera_id:
+                return str(camera['network_id'])
+        if not self.owls:
+            self.get_owls()
+        for owl in self.owls:
+            if str(owl['id']) == camera_id:
+                return str(owl['network_id'])
+        return ''
+
+    def get_camera_clip(self, camera_id):
+        """_summary_
+
+        Args:
+            network_id (_type_): _description_
+            camera_id (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        network_id = self.get_newtwork_id_from_camera(camera_id)
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/network/' + \
+            network_id + '/camera/' + camera_id + '/clip'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
+
+    def disarm_network(self, network_id):
+        """
+            Set to disarm one network
+
+        Args:
+            network_id (str): is the identification of the network 
+            you want to disarm
+
+        Returns:
+            list: returns the response of the server to the request
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            self.account_id + '/networks/' + network_id + '/state/disarm'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
+
+    def get_server(self):
+        """
+            Gets the server for the account
+
+        Returns:
+            str: returns the uri where you should do the requests
+        """
+        tier = self.basic_info['account']['tier']
+        self.server = self.server.replace('prod', tier)
+        return self.server
+
+    def get_login(self):
+        """
+            Login in the server
+
+        Returns:
+            list: return the response of the server for the login
+                this info is used for generat basic info
+        """
+        payload = self.__prepare_http_request__()
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v5/account/login'
+        endpoint['certificate'] = False
+        payload['data'] = json.dumps({
+            'password': self.config.auth['PASSWORD'],
+            'email': self.config.auth['USER']
+        })
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
+
+    def get_networks(self):
+        """
+            Using basic info, gets the networks of the account
+
+        Returns:
+            list: list of networks in the account
+        """
+        result = self.get_home_screen_info()
+        self.networks = result['response']['networks']
+        return self.networks
+
+    def get_owls(self):
+        """
+            Using basic info, gets the owls of the account
+
+        Returns:
+            list: list of owls in the account
+        """
+        result = self.get_home_screen_info()
+        self.owls = result['response']['owls']
+        return self.owls
+
+    def get_sync_modules(self):
+        """
+            Using basic info, gets the sync_modules of the account
+
+        Returns:
+            list: list of sync_modules  in the account
+        """
+        result = self.get_home_screen_info()
+        self.sync_modules = result['response']['sync_modules']
+        return self.sync_modules
+
+    def get_cameras(self):
+        """
+            Using basic info, gets the cameras of the account
+
+        Returns:
+            list: list of cameras  in the account
+        """
+        result = self.get_home_screen_info()
+        self.cameras = result['response']['cameras']
+        return self.cameras
+
+    def get_home_screen_info(self):
+        """
+            Gets the home screen info of the account
+
+        Returns:
+            dict : This responses a json with the status_code, 
+            the response of the server(blank if has no json format) and if is_success
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v3/accounts/' + \
+            self.account_id + '/homescreen'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        return self.get_response_to_request(http_instance)
+
+    def set_thumbnail(self, camera_id):
+        """
+            Set the thumbnail of a camera
+
+        Args:
+            camera_id (str): Id of the camera you want to update the thumbnail
+
+        Returns:
+            dict : This responses a json with the status_code, 
+            the response of the server(blank if has no json format) and if is_success
+        """
+        network_id = self.get_newtwork_id_from_camera(camera_id)
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/network/' + \
+            network_id + '/camera/' + camera_id + '/thumbnail'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
+
+    def set_owl_thumbnail(self, owl_id):
+        """
+            Set the thumbnail of a Owl
+
+        Args:
+            owl_id (str): Id of the owl you want to update the thumbnail
+
+        Returns:
+            dict : This responses a json with the status_code, 
+            the response of the server(blank if has no json format) and if is_success
+        """
+        network_id = self.get_newtwork_id_from_camera(owl_id)
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + 'api/v1/accounts/'+self.account_id+'/networks/' + \
+            network_id + '/owls/' + owl_id + '/thumbnail'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        print(http_instance.response.text)
+        return self.get_response_to_request(http_instance)
+
+    def send_2fa(self, pin):
+        """
+            Send the 2FA pin to the server
+
+        Args:
+            pin (int): mfa recieved in the phone
+
+        Returns:
+            dict : This responses a json with the status_code, 
+            the response of the server(blank if has no json format) and if is_success
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v4/account/' + \
+            self.account_id + '/client/'+self.client_id+'/pin/verify'
+        endpoint['certificate'] = False
+        payload['data'] = json.dumps({"pin": pin})
+        print(payload)
+        print(endpoint)
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.get_response_to_request(http_instance)
