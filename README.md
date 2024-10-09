@@ -37,11 +37,11 @@ zip -r9 ../my_app.zip app
 
 In the layers page inside functions in AWS, you will need to create a new layer with the layers required by this project that you can see in the image above
 
-![Where to find Layers](img/WhereAreLayers.png)
+![Where to find Layers](img/WhereAreLayers.png | width=250)
 
 Once there, you will need to press in Create layer with this configuration:
 
-![Layer Configuration](img/CreateLayer.png)
+![Layer Configuration](img/CreateLayer.png | width=250)
 
 With this new blinkRoutines_Layer you can config the new lambda
 
@@ -49,7 +49,7 @@ With this new blinkRoutines_Layer you can config the new lambda
 
 For creating this lambda, you must config the lambda from scratch with this configuration
 
-![Function Configuration](img/CreateFunction.png)
+![Function Configuration](img/CreateFunction.png | width=250)
 
 ## Upload the code
 
@@ -59,7 +59,7 @@ Pressing in the box Upload Zip File
 
 And select the file generated in the previous phase
 
-![Upload Zip File](img/UploadZipFile.png)
+![Upload Zip File](img/UploadZipFile.png | width=250)
 
 ## Add the Layer
 
@@ -69,14 +69,14 @@ Once created, you must include the layer previously created. For that, you must 
 
 And there select custom layers --> blinkRoutines_Layer -> v1 with a configuration like the next image
 
-![Include the layers](img/IncludeLayer.png)
+![Include the layers](img/IncludeLayer.png | width=250)
 
 ## Change the function handler
 
 As far as we are not using the default handler, we must change it over the function configuration.
 New handler must be app.main.handler as you can see above
 
-![Change Handler](img/ChangeHandler.png)
+![Change Handler](img/ChangeHandler.png | width=250)
 
 ## Create Variables
 
@@ -90,7 +90,7 @@ For now they are not very importants because you will need to overwrite most of 
 | ENDPOINT_BLINK | https://rest-prod.immedia-semi.com/ |
 | TIMEOUT        | 3                                   |
 
-![Variables](img/Variables.png)
+![Variables](img/Variables.png | width=250)
 
 ## TO DO API GATEWAY AND BASIC CONF ##
 
@@ -103,11 +103,11 @@ You can go to routines by the settings app searching routines.
 
 Here what you need is to create a new profile that runs a web clip once you are away from a site (your house for example). The configuration should be like this:
 
-![Arm](img/Arm.jpg)
+![Arm](img/Arm.jpg | width=250)
 
 # Add a Routine for disarm your blink camera
 
 You should do the same for disarm. The only thing that you have to keep in mind is that the arm zone and
 the disarm zone are disjoint because if not, they will not work properly
 
-![DisArm](img/Disarm.jpg)
+![DisArm](img/Disarm.jpg | width=250)
