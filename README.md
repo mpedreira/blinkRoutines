@@ -93,3 +93,21 @@ For now they are not very importants because you will need to overwrite most of 
 ![Variables](img/Variables.png)
 
 ## TO DO API GATEWAY AND BASIC CONF ##
+
+# Configure Samsung Routine
+
+Once all is configured you only need to create two profiles, one for arm and another for disarm, for that, you can use routines in your Samsung device.
+You can go to routines by the settings app searching routines.
+
+# Add a Routine for arm your blink camera
+
+Here what you need is to create a new profile that runs a web clip once you are away from a site (your house for example). The configuration should be like this:
+
+![Arm](img/Arm.jpg)
+
+# Add a Routine for disarm your blink camera
+
+You should do the same for disarm. The only thing that you have to keep in mind is that the arm zone and
+the disarm zone are disjoint because if not, they will not work properly
+
+![DisArm](img/Disarm.jpg)
