@@ -5,17 +5,8 @@ This info is required for config rest of the modules
 # pylint: disable=E0401,R0903
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
-
-
-class User(BaseModel):
-    """
-        Information required for the user to login to the Blink API.
-    """
-    username: str
-    password: str
 
 
 router = APIRouter()
@@ -23,7 +14,7 @@ router = APIRouter()
 
 
 @router.post("/")
-def get_config(user: User):
+def get_config(username: str, password: str):
     """
         Function that calls the BlinkAPI class to get the basic configuration of the Blink API.
 
@@ -37,13 +28,13 @@ def get_config(user: User):
     """
     config_instance = ConfigAWS()
     config_instance.auth = {}
-    config_instance.auth['USER'] = user['username']
-    config_instance.auth['PASSWORD'] = user['password']
+    config_instance.auth['USER'] = username
+    config_instance.auth['PASSWORD'] = password
     blink_instance = BlinkAPI(config_instance)
     login = blink_instance.get_login()
     response = {}
     response['tier'] = login['response']['account']['tier']
     response['ACCOUNT_ID'] = login['response']['account']['account_id']
     response['CLIENT_ID'] = login['response']['account']['client_id']
-    response['TOKEN_AUTH'] = login['response']['account']['auth']['token']
+    response['TOKEN_AUTH'] = login['response']['auth']['token']
     return response
