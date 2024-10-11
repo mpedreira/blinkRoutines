@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0301,R0903
+# pylint: disable=C0301,R0903,E401
 # -*- coding: utf-8 -*-
 """Module for static configuration of Claroty"""
 
