@@ -27,6 +27,7 @@ class Blink ():
         self.basic_info = {}
         self.basic_info['account'] = {}
         self.basic_info['account']['tier'] = 'prod'
+        self.unique_id = self.config.session['UID']
 
     def get_client_id(self):
         """
