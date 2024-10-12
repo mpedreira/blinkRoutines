@@ -19,6 +19,9 @@ class ConfigAWS (Config):
         """
         self.endpoints = {}
         self.session = {}
+        self.auth = {}
+        self.auth['USER'] = os.environ['USER']
+        self.auth['PASSWORD'] = os.environ['PASSWORD']
         self.session['TIER'] = os.environ['TIER']
         self.session['ACCOUNT_ID'] = os.environ['ACCOUNT_ID']
         self.parameter_store = os.environ['PARAMETER_STORE']
@@ -33,7 +36,7 @@ class ConfigAWS (Config):
         """
             Update the token in the config.
         """
-        json_response = json.dumps(response)
+        json_response = json.loads(response.text)
         parameter = json_response['auth']['token']
         self.__set_parameter__(self.parameter_store, parameter, "String")
         self.session['TOKEN_AUTH'] = parameter
