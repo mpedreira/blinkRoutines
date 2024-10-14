@@ -86,11 +86,12 @@ For now they are not very importants because you will need to overwrite most of 
 | -------------- | ----------------------------------- |
 | TIER           | ANY                                 |
 | ACCOUNT_ID     | ANY                                 |
-| TOKEN_AUTH     | ANY                                 |
 | ENDPOINT_BLINK | https://rest-prod.immedia-semi.com/ |
 | TIMEOUT        | 3                                   |
 
 ![Variables](img/Variables.png)
+
+## Create Parameters in parameter Store
 
 ## TO DO API GATEWAY AND BASIC CONF ##
 
