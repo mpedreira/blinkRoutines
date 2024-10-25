@@ -68,7 +68,8 @@ class TelegramApi(Telegram):
         endpoint = {}
         endpoint['uri'] = basepath + token + "/sendPhoto"
         endpoint['certificate'] = False
-        payload['files'] = {'photo': open(image, 'rb')}
+        with open(image, 'rb') as img_file:
+            payload['files'] = {'photo': img_file}
         payload['data'] = {'chat_id': channel}
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()

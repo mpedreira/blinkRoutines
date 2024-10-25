@@ -20,7 +20,6 @@ class Telegram:
 
         """
         self.config = config
-        return None
 
     def send_message(self, message, channel):
         """

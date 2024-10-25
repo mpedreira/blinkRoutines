@@ -4,13 +4,12 @@ Tests ConfigMock
 # pylint: disable=C0301,C0303,C0103,E0401,E0611
 import random
 import string
-import json
 from app.classes.adapters.config_static import ConfigStatic
 
 
-def test_get_claroty_config():
+def test_config():
     """
-    Tests get_claroty_config
+    Tests gets the config
     """
     config_instance = ConfigStatic()
 
@@ -18,6 +17,9 @@ def test_get_claroty_config():
 
 
 def test_update_token_auth():
+    """
+    Tests for validating that update_token works
+    """
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     response = {}
     response['auth'] = {}
