@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0301,R0903,E0401
+# pylint: disable=C0301,R0903
 # -*- coding: utf-8 -*-
 """Module for static configuration of Claroty"""
 
@@ -36,8 +36,7 @@ class ConfigAWS (Config):
         """
             Update the token in the config.
         """
-        json_response = json.loads(response.text)
-        parameter = json_response['auth']['token']
+        parameter = response['auth']['token']
         self.__set_parameter__(self.parameter_store, parameter, "String")
         self.session['TOKEN_AUTH'] = parameter
         return True

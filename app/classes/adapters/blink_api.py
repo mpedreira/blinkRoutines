@@ -72,7 +72,7 @@ class BlinkAPI (Blink):
         if http_instance.is_ok_response():
             people = int(self.config.__get_parameter__(
                 "blink_number_of_people_"+str(network_id)))
-            people -= 1
+            people += 1
             self.config.__set_parameter__("blink_number_of_people_"+str(network_id),
                                           str(people), "String")
         return self.__get_response_to_request__(http_instance)
@@ -93,7 +93,7 @@ class BlinkAPI (Blink):
         try:
             result['response'] = json.loads(http_instance.response.text)
         except json.decoder.JSONDecodeError:
-            result['response'] = http_instance.response.text
+            result['response'] = {"message": http_instance.response.text}
         return result
 
     def get_clip(self, clip_id):
@@ -234,7 +234,8 @@ class BlinkAPI (Blink):
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
         if re_auth:
-            self.config.update_token_auth(http_instance.response)
+            json_response = json.loads(http_instance.response.text)
+            self.config.update_token_auth(json_response)
         return self.__get_response_to_request__(http_instance)
 
     def get_networks(self):
