@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# pylint: disable=C0301,R0903
+# pylint: disable=C0301,R0903,E0401
 # -*- coding: utf-8 -*-
 """Module for static configuration of Claroty"""
 
 import os
-import json
 import boto3
 from app.classes.config import Config
 
@@ -23,6 +22,8 @@ class ConfigAWS (Config):
         self.auth['USER'] = os.environ['USER']
         self.auth['PASSWORD'] = os.environ['PASSWORD']
         self.session['TIER'] = os.environ['TIER']
+        self.auth['TELEGRAM_API'] = os.environ['TELEGRAM_API']
+        self.endpoints['TELEGRAM_BASEPATH'] = os.environ['TELEGRAM_BASEPATH']
         self.session['ACCOUNT_ID'] = os.environ['ACCOUNT_ID']
         self.parameter_store = os.environ['PARAMETER_STORE']
         self.session['TOKEN_AUTH'] = self.__get_parameter__(
