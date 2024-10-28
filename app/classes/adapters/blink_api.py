@@ -293,7 +293,7 @@ class BlinkAPI (Blink):
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
-        endpoint['uri'] = self.server + 'api/v3/accounts/' + \
+        endpoint['uri'] = self.server + '/api/v3/accounts/' + \
             self.account_id + '/homescreen'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
@@ -345,7 +345,7 @@ class BlinkAPI (Blink):
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
-        endpoint['uri'] = self.server + 'api/v1/accounts/'+self.account_id + \
+        endpoint['uri'] = self.server + '/api/v1/accounts/'+self.account_id + \
             '/networks/' + network_id + '/owls/' + owl_id + '/thumbnail'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
@@ -366,7 +366,7 @@ class BlinkAPI (Blink):
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
-        endpoint['uri'] = self.server + 'api/v4/account/' + \
+        endpoint['uri'] = self.server + '/api/v4/account/' + \
             self.account_id + '/client/'+self.client_id+'/pin/verify'
         endpoint['certificate'] = False
         data = {}

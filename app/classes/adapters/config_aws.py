@@ -4,6 +4,7 @@
 """Module for static configuration of Claroty"""
 
 import os
+import json
 import boto3
 from app.classes.config import Config
 
@@ -19,6 +20,7 @@ class ConfigAWS (Config):
         self.endpoints = {}
         self.session = {}
         self.auth = {}
+        self.cameras = json.dumps(os.environ['CAMERAS'])
         self.auth['USER'] = os.environ['USER']
         self.auth['PASSWORD'] = os.environ['PASSWORD']
         self.session['TIER'] = os.environ['TIER']
