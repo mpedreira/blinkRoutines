@@ -74,6 +74,29 @@ class TelegramApi(Telegram):
         http_instance.post_request()
         return json.loads(http_instance.response.text)
 
+    def send_video(self, video, channel):
+        """
+            Sends a image to a channel in Telegram.
+
+        Args:
+            video (bytes): Downloaded video
+            channel (str): Channel id where the message is going to be send
+
+        Returns:
+            dict: Response of the Telegram API
+        """
+        token = self.config.auth['TELEGRAM_API']
+        basepath = self.config.endpoints['TELEGRAM_BASEPATH']
+        payload = self.__prepare_http_request__()
+        endpoint = {}
+        endpoint['uri'] = basepath + token + "/sendVideo"
+        endpoint['certificate'] = False
+        payload['files'] = {'video': video}
+        payload['data'] = {'chat_id': channel}
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return json.loads(http_instance.response.text)
+
     def send_image(self, image, channel):
         """
             Sends a image to a channel in Telegram.

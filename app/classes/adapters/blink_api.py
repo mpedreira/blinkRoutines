@@ -293,7 +293,7 @@ class BlinkAPI (Blink):
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
-        endpoint['uri'] = self.server + '/api/v3/accounts/' + \
+        endpoint['uri'] = self.server + 'api/v3/accounts/' + \
             self.account_id + '/homescreen'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
