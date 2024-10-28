@@ -45,7 +45,9 @@ def get_images(channel_id: str, cam_name: str):
     if thumb == "":
         return {'response': "no hay videos"}
     clip_media = thumb['media']
-    message = "Generado video de " + thumb['device_name'] + "("+thumb['network_name']+")" a las " + thumb['created_at']
+    message = "Generado video de " + \
+        thumb['device_name'] + \
+        "("+thumb['network_name']+") a las " + thumb['created_at']
     response = telegram_instance.send_message(message, channel_id)
     video = blink_instance.get_clip(thumb['media'])
     video_clip = b''.join(chunk for chunk in video if chunk)
