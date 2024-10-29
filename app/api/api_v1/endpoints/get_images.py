@@ -3,8 +3,7 @@ This file contains the endpoint to get the images from the cameras in telegram
 """
 # pylint: disable=E0401,R0801,E0611
 
-
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
@@ -76,7 +75,7 @@ def get_clip(blink_instance, camera_id, delta):
     return ''
 
 
-def get_date(delta):
+def get_date(delta, app_timezone=1):
     """
         Gets the date in the format that the blink api needs
 
@@ -85,7 +84,8 @@ def get_date(delta):
     Returns:
         str: Date
     """
-    now = datetime.now() - timedelta(minutes=delta)
+    european_timezone = timezone(timedelta(hours=app_timezone))
+    now = datetime.now(european_timezone) - timedelta(minutes=delta)
     formatted_date = now.strftime('%Y-%m-%dT%H:%M:%S+0000')
     formatted_date = formatted_date.replace(':', '%3A')
     return formatted_date
