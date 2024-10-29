@@ -227,6 +227,7 @@ class BlinkAPI (Blink):
         data['password'] = self.config.auth['PASSWORD']
         data['email'] = self.config.auth['USER']
         data['unique_id'] = self.config.session['UID']
+        data['client_name'] = self.config.session['CLIENT_NAME']
         if re_auth:
             self.get_server()
             data['reauth'] = 'true'

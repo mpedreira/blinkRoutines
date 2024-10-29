@@ -20,7 +20,7 @@ class ConfigAWS (Config):
         self.endpoints = {}
         self.session = {}
         self.auth = {}
-        self.cameras = json.dumps(os.environ['CAMERAS'])
+        self.cameras = json.loads(os.environ['CAMERAS'])
         self.auth['USER'] = os.environ['USER']
         self.auth['PASSWORD'] = os.environ['PASSWORD']
         self.session['TIER'] = os.environ['TIER']
@@ -31,6 +31,7 @@ class ConfigAWS (Config):
         self.session['TOKEN_AUTH'] = self.__get_parameter__(
             "blink_token_auth")
         self.session['CLIENT_ID'] = os.environ['CLIENT_ID']
+        self.session['CLIENT_NAME'] = os.environ['CLIENT_NAME']
         self.session['UID'] = os.environ['UID']
         self.endpoints['BLINK'] = os.environ['BLINK_ENDPOINT']
         self.timeout = int(os.environ['TIMEOUT'])
