@@ -1,6 +1,6 @@
 # blinkRoutines
 
-Based on the repositiory of [MattTW](https://github.com/MattTW/BlinkMonitorProtocol) where is listened the API of the Blink Cameras, this is an API that you can deploy in AWS for been able to arm or disarm your cameras based in your GPS Position. For this, Im using Samsung Routines that allows to open a page based in your location.
+Based on the repositiory of [MattTW](https://github.com/MattTW/BlinkMonitorProtocol) where is listened the API of the Blink Cameras, this is an API that you can deploy in AWS for been able to arm or disarm your cameras based in your GPS Position. For this, Im using Samsung Routines that allows to open a page based in your location. If you want to find the [full Swagger definition](https://mpedreira.github.io/blink_api/) for doing this by your self, you can access [here](https://mpedreira.github.io/blink_api/)
 
 Here you will have the process for doing it for your self.
 
