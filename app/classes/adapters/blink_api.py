@@ -3,6 +3,7 @@
 """Module for using Blink Cameras through API"""
 
 import json
+from time import sleep
 from app.classes.blink import Blink
 from app.classes.adapters.http_request_standard import HttpRequestStandard
 
@@ -138,6 +139,118 @@ class BlinkAPI (Blink):
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.get_request()
         return self.__get_response_to_request__(http_instance)
+
+    def is_processed(self, response):
+        """
+        Returns if the response is processed or not
+
+        Args:
+            response (http.response): response of the server
+
+        Returns:
+            bool: Returns true if it is processed, false if not
+        """
+        if response.status_code == 409:
+            return False
+
+        return True
+
+    def get_network_id_from_sync_module(self, sync_module):
+        """
+            Gets the network ID from the sync module
+        Args:
+            sync_module (int): Id of the sync module
+
+        Returns:
+            str: Id of the network
+        """
+        sync_modules = self.get_sync_modules()
+        for sync in sync_modules:
+            if sync['id'] == sync_module:
+                return str(sync['network_id'])
+        return ''
+
+    def get_local_clips(self, sync_module):
+        """
+            Gets an array of clips from the server
+
+        Args:
+            sync_module (int): sync module id
+
+        Returns:
+            dict: array with the clips
+        """
+        network_id = self.get_network_id_from_sync_module(sync_module)
+        request_id = self.set_sync_module_request(sync_module, network_id)
+        processed = False
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['certificate'] = False
+        while not processed:
+            endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+                self.account_id+'/networks/' + str(network_id)+'/sync_modules/' + \
+                str(sync_module)+'/local_storage/manifest/request/'+str(request_id)
+            http_instance = HttpRequestStandard(endpoint, payload)
+            http_instance.get_request()
+            processed = self.is_processed(http_instance.response)
+            response = http_instance.get_json_response()
+            if not processed:
+                sleep(1)
+        response = self.__get_response_to_request__(http_instance)
+        response['response']['request_id'] = str(request_id)
+        response['response']['network_id'] = str(network_id)
+        response['response']['sync_module_id'] = str(sync_module)
+        return response
+
+    def get_local_clip(self, clips):
+        """
+            Gets the local clip from the server
+
+        Args:
+            clips (array): array of clips returned by the server
+
+        Returns:
+            chunk : returns the clip in mp4 format
+        """
+        network_id = clips['network_id']
+        sync_module_id = clips['sync_module_id']
+        request_id = clips['request_id']
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['certificate'] = False
+        clip_id = clips['clips'][0]['id']
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            self.account_id + '/networks/'+network_id + \
+            '/sync_modules/' + sync_module_id + '/local_storage/manifest/' + \
+            str(request_id) + '/clip/request/' + clip_id
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        result = http_instance.response.iter_content(chunk_size=1024)
+        return result
+
+    def set_sync_module_request(self, sync_module, network_id):
+        """
+           Creates a request to get the info from the sync module
+        Args:
+            sync_module (int): sync module id
+            network_id (int): network id
+
+        Returns:
+            int: manifest request id
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            str(self.account_id)+'/networks/'+str(network_id)+'/sync_modules/' + \
+            str(sync_module)+'/local_storage/manifest/request'
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        response = http_instance.get_json_response()
+        return response['id']
 
     def __get_newtwork_id_from_camera__(self, camera_id):
         """

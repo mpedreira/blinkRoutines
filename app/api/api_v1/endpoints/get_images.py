@@ -10,6 +10,7 @@ from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
 
 CAM_ID = {}
+EMPTY = ""
 
 router = APIRouter()
 """ This creates the new API path /arm/{newtork_id} """
@@ -40,18 +41,97 @@ def get_images(channel_id: str, cam_name: str):
     # else:
     #    thumb = get_own_thumb(cam_name, blink_instance)
     camera_id = cam_array[cam_name]["id"]
-    thumb = get_clip(blink_instance, camera_id, 500)
-    if thumb == "":
-        return {'response': "no hay videos"}
-    clip_media = thumb['media']
+ #   clips = get_clip(blink_instance, camera_id, 5)
+ #   numero_clips = len(clips)
+ #   if numero_clips == 0:
+ #       response['response'] = "No hay videos"
+ #       response = {}
+ #       return response
+ #   thumb = clips[0]
+ #   clip_media = thumb['media']
+    # message = "Generado video de " + \
+    #    thumb['device_name'] + \
+    #    "("+thumb['network_name']+") a las " + thumb['created_at'] + \
+    #    " hay " + str(numero_clips) + " clips en total en esa franja"
+    # response = telegram_instance.send_message(message, channel_id)
+    # video = blink_instance.get_clip(clip_media)
+
+    sync_module = get_sync_module_id(blink_instance, camera_id)
+    response = blink_instance.get_local_clips(sync_module)
+    clips = response['response']
+    numero_clips = len(clips['clips'])
+    if numero_clips == 0:
+        response = {}
+        response['response'] = "No hay videos"
+        return response
+    video = blink_instance.get_local_clip(clips)
+    clip = clips['clips'][0]
     message = "Generado video de " + \
-        thumb['device_name'] + \
-        "("+thumb['network_name']+") a las " + thumb['created_at']
+        clip['camera_name'] + \
+        " a las " + clip['created_at'] + \
+        " hay " + str(numero_clips) + " clips en total en esa franja"
     response = telegram_instance.send_message(message, channel_id)
-    video = blink_instance.get_clip(clip_media)
     video_clip = b''.join(chunk for chunk in video if chunk)
     response = telegram_instance.send_video(video_clip, channel_id)
     return response
+
+
+def get_sync_module_id(blink_instance, camera_id):
+    """
+        Gets the sync module id asociated to the camera
+
+    Args:
+        blink_instance (class): Instance of the blink api
+        camera_id (int): camera id
+
+    Returns:
+        int: sync module id
+    """
+    response = blink_instance.get_home_screen_info()
+    network_id = 1
+    sync_module_id = 1
+    cameras = response['response']['cameras']
+    sync_modules = response['response']['sync_modules']
+    network_id = get_network_id(camera_id, cameras)
+    sync_module_id = get_sync_module_from_network_id(network_id, sync_modules)
+    return sync_module_id
+
+
+def get_sync_module_from_network_id(network_id, sync_modules):
+    """
+        Gets the sync module id from the network id
+
+    Args:
+        network_id (int): network id
+        sync_modules (int): sync module list
+
+    Returns:
+        int: sync module id
+    """
+    sync_module_id = 1
+    for sync_module in sync_modules:
+        if sync_module['network_id'] == network_id:
+            sync_module_id = sync_module['id']
+            return sync_module_id
+    return sync_module_id
+
+
+def get_network_id(camera_id, cameras):
+    """
+        Gets the network id from the camera id
+    Args:
+        camera_id (int): camera id
+        cameras (dict): list of cameras in the account
+
+    Returns:
+        int: network id
+    """
+    network_id = 1
+    for camera in cameras:
+        if camera['id'] == int(camera_id):
+            network_id = camera['network_id']
+            return network_id
+    return network_id
 
 
 def get_clip(blink_instance, camera_id, delta):
@@ -68,14 +148,14 @@ def get_clip(blink_instance, camera_id, delta):
     """
     formatted_date = get_date(delta)
     response = blink_instance.get_video_events(formatted_date)
+    clips = []
     for clip in response['response']['media']:
         if clip['device_id'] == int(camera_id):
-            response = clip
-            return response
-    return ''
+            clips.append(clip)
+    return clips
 
 
-def get_date(delta, app_timezone=1):
+def get_date(delta, app_timezone=0):
     """
         Gets the date in the format that the blink api needs
 
