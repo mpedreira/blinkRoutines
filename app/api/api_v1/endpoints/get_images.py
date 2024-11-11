@@ -66,12 +66,17 @@ def get_images(channel_id: str, cam_name: str):
         return response
     video = blink_instance.get_local_clip(clips)
     clip = clips['clips'][0]
+    if type(video) == dict:
+        message = "No he sido capaz de descargar el video"
+        response = telegram_instance.send_message(message, channel_id)
+        return response
+    video_clip = b''.join(chunk for chunk in video if chunk)
     message = "Generado video de " + \
         clip['camera_name'] + \
         " a las " + clip['created_at'] + \
         " hay " + str(numero_clips) + " clips en total en esa franja"
     response = telegram_instance.send_message(message, channel_id)
-    video_clip = b''.join(chunk for chunk in video if chunk)
+
     response = telegram_instance.send_video(video_clip, channel_id)
     return response
 
