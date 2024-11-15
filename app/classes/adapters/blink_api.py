@@ -220,8 +220,9 @@ class BlinkAPI (Blink):
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
         endpoint['certificate'] = False
-        clip_id = str(clips['clips'][0]['id'])
-        endpoint['uri'] = self.server + '/api/v1/accounts/' + self.account_id+'/networks/'+network_id + \
+        clip_id = clips['clips'][0]['id']
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
+            self.account_id + '/networks/'+network_id + \
             '/sync_modules/' + sync_module_id + '/local_storage/manifest/' + \
             str(request_id) + '/clip/request/' + clip_id
         http_instance = HttpRequestStandard(endpoint, payload)
