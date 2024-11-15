@@ -220,7 +220,6 @@ class BlinkAPI (Blink):
         """
         network_id = clips['network_id']
         sync_module_id = clips['sync_module_id']
-        request_id = clips['request_id']
         manifest_id = clips['manifest_id']
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
@@ -234,9 +233,9 @@ class BlinkAPI (Blink):
             response['response'] = {"message": "No clips found"}
             return response
         clip_id = clips['clips'][0]['id']
-        endpoint['uri'] = self.server + '/api/v1/accounts/' + self.account_id + '/networks/'+network_id + \
-            '/sync_modules/' + sync_module_id + '/local_storage/manifest/' + \
-            manifest_id + '/clip/request/' + clip_id
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + self.account_id +  \
+            '/networks/'+network_id + '/sync_modules/' + sync_module_id + \
+            '/local_storage/manifest/' + manifest_id + '/clip/request/' + clip_id
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
         http_instance.get_request()
