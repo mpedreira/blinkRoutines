@@ -7,6 +7,9 @@ from time import sleep
 from app.classes.blink import Blink
 from app.classes.adapters.http_request_standard import HttpRequestStandard
 
+WAIT_CODE = 409
+MAX_RETRIES = 5
+
 
 class BlinkAPI (Blink):
     """
@@ -197,9 +200,11 @@ class BlinkAPI (Blink):
             response = http_instance.get_json_response()
             if not processed:
                 sleep(1)
+        manifest_id = response['manifest_id']
         response = self.__get_response_to_request__(http_instance)
         response['response']['request_id'] = str(request_id)
         response['response']['network_id'] = str(network_id)
+        response['response']['manifest_id'] = str(manifest_id)
         response['response']['sync_module_id'] = str(sync_module)
         return response
 
@@ -216,18 +221,26 @@ class BlinkAPI (Blink):
         network_id = clips['network_id']
         sync_module_id = clips['sync_module_id']
         request_id = clips['request_id']
+        manifest_id = clips['manifest_id']
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
         endpoint['certificate'] = False
+        numero_clips = len(clips['clips'])
+        if numero_clips == 0:
+            response = {}
+            response['status_code'] = 404
+            response['is_ok'] = False
+            response['response'] = {"message": "No clips found"}
+            return response
         clip_id = clips['clips'][0]['id']
-        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
-            self.account_id + '/networks/'+network_id + \
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + self.account_id + '/networks/'+network_id + \
             '/sync_modules/' + sync_module_id + '/local_storage/manifest/' + \
-            str(request_id) + '/clip/request/' + clip_id
+            manifest_id + '/clip/request/' + clip_id
         http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
         http_instance.get_request()
-        if not http_instance.response.status_code == 200:
+        if http_instance.response.status_code != 200:
             return self.__get_response_to_request__(http_instance)
         result = http_instance.response.iter_content(chunk_size=1024)
         return result
@@ -242,17 +255,27 @@ class BlinkAPI (Blink):
         Returns:
             int: manifest request id
         """
+        status_code = WAIT_CODE
+        retries = MAX_RETRIES
+        manifest_id = 0
         payload = self.__prepare_http_request__()
         payload['headers']['token-auth'] = self.token_auth
         endpoint = {}
-        endpoint['uri'] = self.server + '/api/v1/accounts/' + \
-            str(self.account_id)+'/networks/'+str(network_id)+'/sync_modules/' + \
-            str(sync_module)+'/local_storage/manifest/request'
+        endpoint['uri'] = self.server + '/api/v1/accounts/' + str(self.account_id)+'/networks/'+str(
+            network_id)+'/sync_modules/' + str(sync_module)+'/local_storage/manifest/request'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
-        response = http_instance.get_json_response()
-        return response['id']
+        while status_code == WAIT_CODE and retries > 0:
+            http_instance.post_request()
+            response = http_instance.get_json_response()
+            retries -= 1
+            status_code = http_instance.response.status_code
+            if status_code == WAIT_CODE:
+                sleep(1)
+        if status_code != WAIT_CODE:
+            manifest_id = response['id']
+            return manifest_id
+        return manifest_id
 
     def __get_newtwork_id_from_camera__(self, camera_id):
         """
