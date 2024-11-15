@@ -66,7 +66,7 @@ def get_images(channel_id: str, cam_name: str):
         return response
     video = blink_instance.get_local_clip(clips)
     clip = clips['clips'][0]
-    if type(video) == dict:
+    if isinstance(video, dict):
         message = "No he sido capaz de descargar el video"
         response = telegram_instance.send_message(message, channel_id)
         return response
