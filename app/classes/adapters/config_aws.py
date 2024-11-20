@@ -35,6 +35,8 @@ class ConfigAWS (Config):
         self.session['UID'] = os.environ['UID']
         self.endpoints['BLINK'] = os.environ['BLINK_ENDPOINT']
         self.timeout = int(os.environ['TIMEOUT'])
+        self.s3_folder = os.environ['S3_FOLDER']
+        self.bucket = os.environ['BUCKET']
 
     def update_token_auth(self, response):
         """
