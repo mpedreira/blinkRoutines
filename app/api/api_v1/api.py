@@ -5,8 +5,8 @@
 
 from fastapi import APIRouter
 
-from .endpoints import arm, disarm, update_owl, update_thumb
-from .endpoints import get_basic_config, send_2fa, telegram, get_images
+from .endpoints import arm, disarm, get_image, get_local_video, update_owl, update_thumb
+from .endpoints import get_basic_config, send_2fa, telegram, save_images, get_remote_video
 
 router = APIRouter()
 router.include_router(get_basic_config.router,
@@ -20,4 +20,10 @@ router.include_router(update_owl.router,
 router.include_router(arm.router, prefix="/arm", tags=["Network"])
 router.include_router(disarm.router, prefix="/disarm", tags=["Network"])
 router.include_router(telegram.router, prefix="/telegram", tags=["Network"])
-router.include_router(get_images.router, prefix="/get_images", tags=["Camera"])
+router.include_router(get_local_video.router,
+                      prefix="/get_local_video", tags=["Camera"])
+router.include_router(get_remote_video.router,
+                      prefix="/get_remote_video", tags=["Camera"])
+router.include_router(get_image.router, prefix="/get_image", tags=["Camera"])
+router.include_router(save_images.router,
+                      prefix="/save_images", tags=["Camera"])

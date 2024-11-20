@@ -95,7 +95,7 @@ class TelegramApi(Telegram):
         payload['data'] = {'chat_id': channel}
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return json.loads(http_instance.response.text)
+        return self.__get_response_to_request__(http_instance)
 
     def send_image(self, image, channel):
         """
@@ -119,4 +119,23 @@ class TelegramApi(Telegram):
         payload['data'] = {'chat_id': channel}
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
-        return json.loads(http_instance.response.text)
+        return self.__get_response_to_request__(http_instance)
+
+    def __get_response_to_request__(self, http_instance):
+        """
+        Args:
+            http_instance (class): this is the class used for the http request
+
+        Returns:
+            list: returns a json file with the status_code of the server, if the
+            response is ok or not and the response of the server. If the response is
+            not a json, it returns the text without format
+        """
+        result = {}
+        result['status_code'] = http_instance.response.status_code
+        result['is_ok'] = http_instance.is_ok_response()
+        try:
+            result['response'] = json.loads(http_instance.response.text)
+        except json.decoder.JSONDecodeError:
+            result['response'] = {"message": http_instance.response.text}
+        return result

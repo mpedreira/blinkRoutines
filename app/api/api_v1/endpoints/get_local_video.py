@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/{channel_id}/{cam_name}")
-def get_images(channel_id: str, cam_name: str):
+def get_local_video(channel_id: str, cam_name: str):
     """
         Function that calls the BlinkAPI class, gets the thumb and send it to the telegram channel
 

@@ -120,6 +120,26 @@ class BlinkAPI (Blink):
         result = http_instance.response.iter_content(chunk_size=1024)
         return result
 
+    def get_image(self, clip_id):
+        """
+            Gets a clip from the server
+
+        Args:
+            clip_id (str): path of the clip
+
+        Returns:
+            bytes: returns the clip in mp4 format
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['uri'] = self.server + clip_id
+        endpoint['certificate'] = False
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        result = http_instance.response.content
+        return result
+
     def get_video_events(self, since="2024-07-31T09%3A58%3A14%2B0000", page="1"):
         """
             Gets the list of events from the server since a date
