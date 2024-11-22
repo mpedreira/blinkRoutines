@@ -140,6 +140,52 @@ class BlinkAPI (Blink):
         result = http_instance.response.content
         return result
 
+    def set_liveview(self, camera_id):
+        """
+            Sets a livestreaming from the server
+
+        Args:
+            camera_id (str): Id of the cammera
+
+        Returns:
+            dict: json with the response from the server
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        network_id = self.__get_newtwork_id_from_camera__(camera_id)
+        endpoint['uri'] = self.server + "/api/v5/accounts/" + self.account_id + \
+            "/networks/" + network_id + "/cameras/" + camera_id + "/liveview"
+        endpoint['certificate'] = False
+        payload['data'] = {"intent": "liveview", "diagnostic": True}
+        print(payload['data'])
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.post_request()
+        return self.__get_response_to_request__(http_instance)
+
+    def get_command(self, network_id, command_id):
+        """
+            Gets the command result from a previous call
+
+        Args:
+            network_id (int): network of the request
+            command_id (int): the ID of the command
+
+        Returns:
+            dict: json response from the server
+        """
+        command_id = str(command_id)
+        network_id = str(network_id)
+        payload = self.__prepare_http_request__()
+        payload['headers']['token-auth'] = self.token_auth
+        endpoint = {}
+        endpoint['certificate'] = False
+        endpoint['uri'] = self.server + "/network/" + \
+            network_id + "/command/" + command_id
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        return self.__get_response_to_request__(http_instance)
+
     def get_video_events(self, since="2024-07-31T09%3A58%3A14%2B0000", page="1"):
         """
             Gets the list of events from the server since a date
