@@ -3,4 +3,3 @@ mangum
 uvicorn
 requests
 boto3
-json
