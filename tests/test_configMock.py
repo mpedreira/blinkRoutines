@@ -1,7 +1,7 @@
 """
 Tests ConfigMock
 """
-# pylint: disable=C0301,C0303,C0103,E0401,E0611
+# pylint: disable=C0301,C0303,C0103,E0401,E0611,R0801
 import random
 import string
 from app.classes.adapters.config_static import ConfigStatic

@@ -1,7 +1,7 @@
 """
     DatabaseDynamoAWS class
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,E0401,C0411
 
 import boto3
 from app.classes.database import Database

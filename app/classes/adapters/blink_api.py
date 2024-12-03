@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Module for using Blink Cameras through API"""
-
+# pylint: disable=R0904
 import json
 from time import sleep
 from app.classes.blink import Blink
