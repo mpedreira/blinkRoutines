@@ -5,7 +5,7 @@ import json
 from app.classes.adapters.http_request_standard import HttpRequestStandard
 from app.classes.telegram import Telegram
 
-# pylint: disable=C0301,R0903,E0401
+# pylint: disable=C0301,R0903,E0401,R0801
 
 
 class TelegramApi(Telegram):

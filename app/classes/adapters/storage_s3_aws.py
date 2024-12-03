@@ -1,7 +1,7 @@
 """
     StorageS3AWS class
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,R0801
 import boto3
 from app.classes.storage import Storage
 
