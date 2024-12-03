@@ -1,8 +1,9 @@
 """
     DatabaseDynamoAWS class
 """
+# pylint: disable=E0401
+
 import boto3
-import json
 from app.classes.database import Database
 
 
@@ -64,7 +65,8 @@ class DatabaseDynamoAWS (Database):
         response = table.get_item(Key=key)
         return self.__get_response_to_request__(response)
 
-    def update_item(self, key, update_expression, expression_attribute_values):
+    def update_item(self, key, update_expression,
+                    expression_attribute_values, return_values="UPDATED_NEW"):
         """
             Update item in DynamoDB
 
@@ -80,7 +82,8 @@ class DatabaseDynamoAWS (Database):
         response = table.update_item(
             Key=key,
             UpdateExpression=update_expression,
-            ExpressionAttributeValues=expression_attribute_values
+            ExpressionAttributeValues=expression_attribute_values,
+            ReturnValues=return_values
         )
         return self.__get_response_to_request__(response)
 

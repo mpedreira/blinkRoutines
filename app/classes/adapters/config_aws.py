@@ -37,6 +37,7 @@ class ConfigAWS (Config):
         self.timeout = int(os.environ['TIMEOUT'])
         self.s3_folder = os.environ['S3_FOLDER']
         self.bucket = os.environ['BUCKET']
+        self.table = os.environ['TABLE']
 
     def update_token_auth(self, response):
         """
