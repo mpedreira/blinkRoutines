@@ -1,9 +1,9 @@
-# pylint: disable=E0401
+# pylint: disable=E0401,R0914
 """
     Saves data of the entrance and exit of the employee
 """
-from fastapi import APIRouter
 from datetime import datetime
+from fastapi import APIRouter
 from boto3.dynamodb.conditions import Key
 from app.classes.adapters.database_dynamo_aws import DatabaseDynamoAWS
 from app.classes.adapters.config_aws import ConfigAWS
@@ -55,11 +55,11 @@ def set_entrance(person: str):
         key = {"day":  day, "person": person}
         diference = salida - entrada
         seconds = int(diference.total_seconds())
-        UPDATE_EXPRESSION = "SET salida = :salida, working_seconds = :working_seconds"
+        update_expresion = "SET salida = :salida, working_seconds = :working_seconds"
         expression_attribute_values = {
             ":salida": hour, ":working_seconds": seconds}  # Nuevo valor para Edad
         result = database_instance.update_item(
-            key, UPDATE_EXPRESSION, expression_attribute_values)
+            key, update_expresion, expression_attribute_values)
         return result
     data = {
         'day': day,  # Clave primaria obligatoria
