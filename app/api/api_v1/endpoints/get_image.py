@@ -4,6 +4,7 @@ This file contains the endpoint to get the images from the cameras in telegram
 # pylint: disable=E0401,R0801,E0611
 
 from datetime import datetime
+from time import sleep
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
@@ -61,6 +62,7 @@ def get_own_thumb(blink_instance, camera_id):
         str: Path of the thumb
     """
     blink_instance.set_owl_thumbnail(camera_id)
+    sleep(5)
     response = blink_instance.get_home_screen_info()
     for owl in response['response']['owl']:
         if owl['id'] == int(camera_id):
@@ -79,6 +81,7 @@ def get_camara_thumb(blink_instance, camera_id):
         str: Path of the thumb
     """
     blink_instance.set_thumbnail(camera_id)
+    sleep(5)
     response = blink_instance.get_home_screen_info()
     for camera in response['response']['cameras']:
         if camera['id'] == int(camera_id):

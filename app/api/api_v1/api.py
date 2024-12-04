@@ -1,7 +1,7 @@
 """
     This includes all the endpoints of the API Rest
 """
-# pylint: disable=E0401
+# pylint: disable=E0401,E0611
 
 from fastapi import APIRouter
 

@@ -58,6 +58,7 @@ def get_local_video(channel_id: str, cam_name: str):
 
     sync_module = get_sync_module_id(blink_instance, camera_id)
     response = blink_instance.get_local_clips(sync_module)
+    print(response)
     clips = response['response']
     numero_clips = len(clips['clips'])
     if numero_clips == 0:
