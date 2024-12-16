@@ -2,8 +2,7 @@
 """
     Saves data of the entrance and exit of the employee
 """
-import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from boto3.dynamodb.conditions import Key
