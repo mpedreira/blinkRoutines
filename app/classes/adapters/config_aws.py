@@ -20,6 +20,7 @@ class ConfigAWS (Config):
         self.endpoints = {}
         self.session = {}
         self.auth = {}
+        self.payload = {}
         self.cameras = json.loads(os.environ['CAMERAS'])
         self.auth['USER'] = os.environ['USER']
         self.auth['PASSWORD'] = os.environ['PASSWORD']
@@ -38,6 +39,12 @@ class ConfigAWS (Config):
         self.s3_folder = os.environ['S3_FOLDER']
         self.bucket = os.environ['BUCKET']
         self.table = os.environ['TABLE']
+        self.payload['MAIL_FROM'] = os.environ['MAIL_FROM']
+        self.payload['SMTP_CHARSET'] = os.environ['SMTP_CHARSET']
+        self.endpoints['SMTP_HOST'] = os.environ['SMTP_HOST']
+        self.endpoints['SMTP_PORT'] = os.environ['SMTP_PORT']
+        self.auth['SMTP_PASSWORD'] = os.environ['SMTP_PASSWORD']
+        self.auth['SMTP_USERNAME'] = os.environ['SMTP_USERNAME']
 
     def update_token_auth(self, response):
         """
