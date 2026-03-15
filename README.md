@@ -95,6 +95,9 @@ For now they are not very importants because you will need to overwrite most of 
 
 ## TO DO API GATEWAY AND BASIC CONF ##
 
+
+This project is tested with BrowserStack.
+
 # Configure Samsung Routine
 
 Once all is configured you only need to create two profiles, one for arm and another for disarm, for that, you can use routines in your Samsung device.
