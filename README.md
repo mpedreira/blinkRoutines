@@ -115,3 +115,5 @@ You should do the same for disarm. The only thing that you have to keep in mind 
 the disarm zone are disjoint because if not, they will not work properly
 
 ![DisArm](img/Disarm.jpg)
+
+This project is tested with BrowserStack
