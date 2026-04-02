@@ -47,8 +47,6 @@ def arm_network(blink_instance, network_id, retry=False):
         dict : This responses a json with the status_code,
             the response of the server(blank if has no json format) and if is_success
     """
-    if retry:
-        blink_instance.__update_token__()
     blink_instance.__set_token__()
     blink_instance.get_server()
     return blink_instance.arm_network(str(network_id))

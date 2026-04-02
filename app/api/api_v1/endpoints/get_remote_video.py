@@ -94,5 +94,5 @@ def get_date(delta, app_timezone=0):
     european_timezone = timezone(timedelta(hours=app_timezone))
     now = datetime.now(european_timezone) - timedelta(minutes=delta)
     formatted_date = now.strftime('%Y-%m-%dT%H:%M:%S+0000')
-    formatted_date = formatted_date.replace(':', '%3A')
+    formatted_date = formatted_date.replace(':', '%3A').replace('+', '%2B')
     return formatted_date

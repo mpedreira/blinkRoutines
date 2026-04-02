@@ -16,15 +16,19 @@ router = APIRouter()
 @router.post("/")
 def get_config(username: str, password: str):
     """
-        Function that calls the BlinkAPI class to get the basic configuration of the Blink API.
+        Initiates the Blink OAuth 2.0 PKCE login flow.
+
+        If Blink requires 2FA, returns {'2fa_required': True, 'message': ...}.
+        The client should then POST the SMS code to /send_2fa.
+
+        On success (no 2FA), returns {'TOKEN_AUTH': '<token>', ...}.
 
     Args:
-        user (User): information of user and password required for 
-                    retrieving the basic configuration
+        username (str): Blink account email
+        password (str): Blink account password
 
     Returns:
-        dict : This responses a json with the status_code, 
-            the response of the server(blank if has no json format) and if is_success
+        dict : login result
     """
     config_instance = ConfigAWS()
     config_instance.auth = {}
@@ -32,9 +36,11 @@ def get_config(username: str, password: str):
     config_instance.auth['PASSWORD'] = password
     blink_instance = BlinkAPI(config_instance)
     login = blink_instance.get_login()
+    if not login['is_ok']:
+        # 2FA required — return the server message so the client knows to call /send_2fa
+        return login['response']
     response = {}
-    response['tier'] = login['response']['account']['tier']
-    response['ACCOUNT_ID'] = login['response']['account']['account_id']
-    response['CLIENT_ID'] = login['response']['account']['client_id']
-    response['TOKEN_AUTH'] = login['response']['auth']['token']
+    response['TOKEN_AUTH'] = login['response'].get('access_token', '')
+    response['TIER'] = config_instance.session.get('TIER', '')
+    response['ACCOUNT_ID'] = config_instance.session.get('ACCOUNT_ID', '')
     return response

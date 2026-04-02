@@ -64,6 +64,7 @@ class HttpRequestStandard(HttpRequest):
             self.response = requests.post(
                 self.endpoint['uri'],
                 data=self.payload['data'],
+                files=self.payload.get('files'),
                 headers=self.payload['headers'],
                 auth=self.payload['auth'],
                 verify=self.endpoint['certificate'],

@@ -20,12 +20,8 @@ def update_thumb(camera: int):
         dict : This responses a json with the status_code, 
         the response of the server(blank if has no json format) and if is_success
     """
-    # raise Exception('This is a test exception.')
     config_instance = ConfigAWS()
     blink_instance = BlinkAPI(config_instance)
     blink_instance.__set_token__()
     blink_instance.get_server()
-    # print(blink_instance.get_cameras())
-    # print(blink_instance.get_video_events())
-    # print(blink_instance.get_cameras())
     return {"item_id": blink_instance.set_thumbnail(str(camera))}

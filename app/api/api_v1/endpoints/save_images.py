@@ -34,7 +34,7 @@ def get_images(cam_name: str):
     blink_instance.get_server()
     camera_id = cam_array[cam_name]['id']
     cam_type = cam_array[cam_name]['type']
-    s3_path = config_instance.s3_folder
+    s3_path = config_instance.folder
     if is_camera(cam_type):
         blink_instance.set_thumbnail(camera_id)
         response = blink_instance.get_home_screen_info()

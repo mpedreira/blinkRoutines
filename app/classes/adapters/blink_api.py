@@ -2,13 +2,87 @@
 # -*- coding: utf-8 -*-
 """Module for using Blink Cameras through API"""
 # pylint: disable=R0904,R0801
+import hashlib
+import base64
+import secrets
 import json
+from html.parser import HTMLParser
 from time import sleep
+from urllib.parse import urlencode, urlparse, parse_qs
+import requests as _req
 from app.classes.blink import Blink
 from app.classes.adapters.http_request_standard import HttpRequestStandard
 
 WAIT_CODE = 409
 MAX_RETRIES = 5
+
+# ── OAuth v2 PKCE constants (inspired by blinkpy dev branch) ──────────────────
+_OAUTH_BASE = "https://api.oauth.blink.com"
+_OAUTH_V2_AUTHORIZE = f"{_OAUTH_BASE}/oauth/v2/authorize"
+_OAUTH_V2_SIGNIN = f"{_OAUTH_BASE}/oauth/v2/signin"
+_OAUTH_V2_2FA_VERIFY = f"{_OAUTH_BASE}/oauth/v2/2fa/verify"
+_OAUTH_TOKEN_URL = f"{_OAUTH_BASE}/oauth/token"
+_TIER_URL = "https://rest-prod.immedia-semi.com/api/v1/users/tier_info"
+_OAUTH_V2_CLIENT_ID = "ios"        # used for auth-code + refresh grants
+_OAUTH_REDIRECT_URI = "immedia-blink://applinks.blink.com/signin/callback"
+_OAUTH_SCOPE = "client"
+_BROWSER_UA = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/26.1 Mobile/15E148 Safari/604.1"
+)
+_TOKEN_UA = "Blink/2511191620 CFNetwork/3860.200.71 Darwin/25.1.0"
+
+
+def _generate_pkce_pair():
+    """Generate PKCE code_verifier and code_challenge (S256)."""
+    code_verifier = (
+        base64.urlsafe_b64encode(secrets.token_bytes(32))
+        .decode("utf-8")
+        .rstrip("=")
+    )
+    code_challenge = (
+        base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode("utf-8")).digest()
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+    return code_verifier, code_challenge
+
+
+class _OAuthArgsParser(HTMLParser):
+    """Extract CSRF token from <script id="oauth-args" type="application/json">."""
+
+    def __init__(self):
+        super().__init__()
+        self.csrf_token = None
+        self._in_script = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "script":
+            d = dict(attrs)
+            if d.get("id") == "oauth-args" and d.get("type") == "application/json":
+                self._in_script = True
+
+    def handle_data(self, data):
+        if self._in_script:
+            try:
+                self.csrf_token = json.loads(data).get("csrf-token")
+            except (json.JSONDecodeError, AttributeError):
+                pass
+            self._in_script = False
+
+    def handle_endtag(self, tag):
+        if tag == "script":
+            self._in_script = False
+
+
+def _extract_csrf(html):
+    """Extract CSRF token from Blink signin page HTML."""
+    parser = _OAuthArgsParser()
+    parser.feed(html)
+    return parser.csrf_token
 
 
 class BlinkAPI (Blink):
@@ -66,7 +140,9 @@ class BlinkAPI (Blink):
             list: returns the response of the server to the request
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
+        payload['headers']['hardware_id'] = self.config.session['UID']
+
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v1/accounts/' + \
             self.account_id + '/networks/' + network_id + '/state/arm'
@@ -111,7 +187,7 @@ class BlinkAPI (Blink):
             bytes: returns the clip in mp4 format
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + clip_id
         endpoint['certificate'] = False
@@ -131,7 +207,7 @@ class BlinkAPI (Blink):
             bytes: returns the clip in mp4 format
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + clip_id
         endpoint['certificate'] = False
@@ -151,14 +227,13 @@ class BlinkAPI (Blink):
             dict: json with the response from the server
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         network_id = self.__get_newtwork_id_from_camera__(camera_id)
         endpoint['uri'] = self.server + "/api/v5/accounts/" + self.account_id + \
             "/networks/" + network_id + "/cameras/" + camera_id + "/liveview"
         endpoint['certificate'] = False
         payload['data'] = {"intent": "liveview", "diagnostic": True}
-        print(payload['data'])
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
         return self.__get_response_to_request__(http_instance)
@@ -177,7 +252,7 @@ class BlinkAPI (Blink):
         command_id = str(command_id)
         network_id = str(network_id)
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['certificate'] = False
         endpoint['uri'] = self.server + "/network/" + \
@@ -200,7 +275,7 @@ class BlinkAPI (Blink):
             _type_: _description_
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v1/accounts/' + \
             self.account_id+'/media/changed?since='+since+'&page='+page
@@ -214,15 +289,12 @@ class BlinkAPI (Blink):
         Returns if the response is processed or not
 
         Args:
-            response (http.response): response of the server
+            response (dict): JSON response from the server
 
         Returns:
-            bool: Returns true if it is processed, false if not
+            bool: Returns true if manifest is ready (has 'clips' key)
         """
-        if response.status_code == 409:
-            return False
-
-        return True
+        return bool(response and isinstance(response, dict) and 'clips' in response)
 
     def get_network_id_from_sync_module(self, sync_module):
         """
@@ -253,17 +325,19 @@ class BlinkAPI (Blink):
         request_id = self.set_sync_module_request(sync_module, network_id)
         processed = False
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['certificate'] = False
-        while not processed:
+        retries = MAX_RETRIES * 6  # up to 30 seconds
+        while not processed and retries > 0:
             endpoint['uri'] = self.server + '/api/v1/accounts/' + \
                 self.account_id+'/networks/' + str(network_id)+'/sync_modules/' + \
                 str(sync_module)+'/local_storage/manifest/request/'+str(request_id)
             http_instance = HttpRequestStandard(endpoint, payload)
             http_instance.get_request()
-            processed = self.is_processed(http_instance.response)
             response = http_instance.get_json_response()
+            processed = self.is_processed(response)
+            retries -= 1
             if not processed:
                 sleep(1)
         manifest_id = response['manifest_id']
@@ -288,7 +362,7 @@ class BlinkAPI (Blink):
         sync_module_id = clips['sync_module_id']
         manifest_id = clips['manifest_id']
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['certificate'] = False
         numero_clips = len(clips['clips'])
@@ -303,8 +377,28 @@ class BlinkAPI (Blink):
             '/networks/'+network_id + '/sync_modules/' + sync_module_id + \
             '/local_storage/manifest/' + manifest_id + '/clip/request/' + clip_id
         http_instance = HttpRequestStandard(endpoint, payload)
+        # POST: ask sync module to upload clip to cloud
         http_instance.post_request()
-        http_instance.get_request()
+        post_resp = http_instance.get_json_response()
+        # Wait for upload command to complete before downloading
+        command_id = post_resp.get('id') if isinstance(
+            post_resp, dict) else None
+        cmd_network_id = post_resp.get('network_id', network_id) if isinstance(
+            post_resp, dict) else network_id
+        if command_id:
+            for _ in range(MAX_RETRIES * 4):  # poll up to 20 s
+                cmd = self.get_command(str(cmd_network_id), str(command_id))
+                if cmd.get('response', {}).get('complete'):
+                    break
+                sleep(1)
+        else:
+            sleep(6)  # fallback if no command_id in response
+        # GET to download with retries
+        for _ in range(MAX_RETRIES):
+            http_instance.get_request()
+            if http_instance.response.status_code == 200:
+                break
+            sleep(3)
         if http_instance.response.status_code != 200:
             return self.__get_response_to_request__(http_instance)
         result = http_instance.response.iter_content(chunk_size=1024)
@@ -324,7 +418,7 @@ class BlinkAPI (Blink):
         retries = MAX_RETRIES
         manifest_id = 0
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v1/accounts/' + str(self.account_id)+'/networks/'+str(
             network_id)+'/sync_modules/' + str(sync_module)+'/local_storage/manifest/request'
@@ -378,7 +472,7 @@ class BlinkAPI (Blink):
         """
         network_id = self.__get_newtwork_id_from_camera__(camera_id)
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/network/' + \
             network_id + '/camera/' + camera_id + '/clip'
@@ -399,7 +493,7 @@ class BlinkAPI (Blink):
             list: returns the response of the server to the request
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v1/accounts/' + \
             self.account_id + '/networks/' + network_id + '/state/disarm'
@@ -416,31 +510,247 @@ class BlinkAPI (Blink):
 
     def get_login(self, re_auth=False):
         """
-            Login in the server
+        OAuth2 authentication.
+        - re_auth=False: full PKCE Authorization Code flow (initial login).
+          Returns 412 / 2fa_required=True if Blink requires an OTP; call
+          send_2fa() afterwards to complete the flow.
+        - re_auth=True: silent refresh using the stored refresh_token (no 2FA).
+        """
+        if re_auth:
+            return self.__oauth_refresh__()
+        return self.__pkce_initial_login__()
+
+    def __oauth_refresh__(self):
+        """
+        Silent token renewal using grant_type=refresh_token.
+        Uses client_id=ios as required by the current Blink OAuth v2 server.
+        """
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': _TOKEN_UA,
+        }
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': self.config.session['REFRESH_TOKEN'],
+            'client_id': _OAUTH_V2_CLIENT_ID,
+            'scope': _OAUTH_SCOPE,
+            'hardware_id': self.config.session['UID'],
+        }
+        response = _req.post(
+            _OAUTH_TOKEN_URL,
+            headers=headers,
+            data=urlencode(data),
+            verify=False,
+            timeout=self.config.timeout,
+        )
+        json_response = json.loads(response.text)
+        if 'access_token' in json_response:
+            self.config.update_token_auth(json_response)
+            self.token_auth = self.config.session['TOKEN_AUTH']
+            self.__get_tier_info__()
+        else:
+            raise Exception(f"Token refresh failed: {json_response}")
+        return {'status_code': response.status_code, 'is_ok': True, 'response': json_response}
+
+    def __pkce_initial_login__(self):
+        """
+        OAuth 2.0 Authorization Code + PKCE full flow (steps 1-3).
+        If Blink returns HTTP 412 (2FA required), persists the PKCE state
+        (code_verifier, csrf_token, session cookies) to config storage and
+        returns {'is_ok': False, 'response': {'2fa_required': True, ...}}.
+        The caller must then invoke send_2fa() with the SMS code.
+        If login succeeds without 2FA, immediately exchanges the code for tokens.
+        """
+        hardware_id = self.config.session['UID']
+        code_verifier, code_challenge = _generate_pkce_pair()
+        session = _req.Session()
+
+        browser_h = {
+            'User-Agent': _BROWSER_UA,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+
+        # Step 1: Authorization request — sets session cookies on the OAuth server
+        params = {
+            'app_brand': 'blink',
+            'app_version': '50.1',
+            'client_id': _OAUTH_V2_CLIENT_ID,
+            'code_challenge': code_challenge,
+            'code_challenge_method': 'S256',
+            'device_brand': 'Apple',
+            'device_model': 'iPhone16,1',
+            'device_os_version': '26.1',
+            'hardware_id': hardware_id,
+            'redirect_uri': _OAUTH_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': _OAUTH_SCOPE,
+        }
+        session.get(
+            _OAUTH_V2_AUTHORIZE, params=params, headers=browser_h,
+            verify=False, timeout=self.config.timeout,
+        )
+
+        # Step 2: Signin page → extract CSRF token
+        signin_page = session.get(
+            _OAUTH_V2_SIGNIN, headers=browser_h,
+            verify=False, timeout=self.config.timeout,
+        )
+        csrf_token = _extract_csrf(signin_page.text)
+        if not csrf_token:
+            raise Exception(
+                'Failed to extract CSRF token from Blink signin page')
+
+        # Step 3: Submit credentials
+        cred_h = {
+            'User-Agent': _BROWSER_UA,
+            'Accept': '*/*',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': _OAUTH_BASE,
+            'Referer': _OAUTH_V2_SIGNIN,
+        }
+        signin = session.post(
+            _OAUTH_V2_SIGNIN,
+            headers=cred_h,
+            data={
+                'username': self.config.auth['USER'],
+                'password': self.config.auth['PASSWORD'],
+                'csrf-token': csrf_token,
+            },
+            allow_redirects=False,
+            verify=False,
+            timeout=self.config.timeout,
+        )
+
+        if signin.status_code == 412:
+            # 2FA required — save state so send_2fa() can complete the flow
+            cookies = dict(session.cookies)
+            self.config.save_oauth_state(code_verifier, csrf_token, cookies)
+            return {
+                'status_code': 412,
+                'is_ok': False,
+                'response': {
+                    '2fa_required': True,
+                    'message': '2FA code required. Send the SMS code to /send_2fa.',
+                },
+            }
+        if signin.status_code in (301, 302, 303, 307, 308):
+            # Direct success (no 2FA configured on this account)
+            return self.__pkce_exchange_code__(session, code_verifier, hardware_id)
+
+        raise Exception(
+            f'PKCE signin failed: HTTP {signin.status_code} — {signin.text}')
+
+    def __pkce_exchange_code__(self, session, code_verifier, hardware_id=None):
+        """
+        Steps 4-5 of PKCE flow: retrieve the authorization code from the
+        redirect URL and exchange it for an access_token + refresh_token.
+        """
+        if hardware_id is None:
+            hardware_id = self.config.session['UID']
+
+        browser_h = {
+            'User-Agent': _BROWSER_UA,
+            'Accept': '*/*',
+            'Referer': _OAUTH_V2_SIGNIN,
+        }
+
+        # Step 4: Follow the authorize redirect to extract the auth code
+        auth_resp = session.get(
+            _OAUTH_V2_AUTHORIZE, headers=browser_h,
+            allow_redirects=False, verify=False, timeout=self.config.timeout,
+        )
+        location = auth_resp.headers.get('Location', '')
+        code = parse_qs(urlparse(location).query).get('code', [None])[0]
+        if not code:
+            raise Exception(
+                f'Failed to get authorization code. Redirect: {location}')
+
+        # Step 5: Exchange code for tokens
+        token_h = {
+            'User-Agent': _TOKEN_UA,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': '*/*',
+        }
+        token_data = {
+            'app_brand': 'blink',
+            'client_id': _OAUTH_V2_CLIENT_ID,
+            'code': code,
+            'code_verifier': code_verifier,
+            'grant_type': 'authorization_code',
+            'hardware_id': hardware_id,
+            'redirect_uri': _OAUTH_REDIRECT_URI,
+            'scope': _OAUTH_SCOPE,
+        }
+        token_resp = _req.post(
+            _OAUTH_TOKEN_URL,
+            headers=token_h,
+            data=urlencode(token_data),
+            verify=False,
+            timeout=self.config.timeout,
+        )
+        json_response = json.loads(token_resp.text)
+        if 'access_token' in json_response:
+            self.config.update_token_auth(json_response)
+            self.token_auth = self.config.session['TOKEN_AUTH']
+            self.__get_tier_info__()
+        else:
+            raise Exception(f'Token exchange failed: {json_response}')
+        return {'status_code': token_resp.status_code, 'is_ok': True, 'response': json_response}
+
+    def send_2fa(self, pin):
+        """
+        Complete the PKCE 2FA flow.
+        Loads the PKCE state (code_verifier, csrf_token, cookies) saved by
+        __pkce_initial_login__(), verifies the SMS code, then exchanges the
+        resulting authorization code for an access_token + refresh_token.
+
+        Args:
+            pin (int | str): OTP received by SMS.
 
         Returns:
-            list: return the response of the server for the login
-                this info is used for generat basic info
+            dict: standard {'status_code', 'is_ok', 'response'} result.
         """
-        payload = self.__prepare_http_request__()
-        endpoint = {}
-        endpoint['uri'] = self.server + '/api/v5/account/login'
-        endpoint['certificate'] = False
-        data = {}
-        data['password'] = self.config.auth['PASSWORD']
-        data['email'] = self.config.auth['USER']
-        data['unique_id'] = self.config.session['UID']
-        data['client_name'] = self.config.session['CLIENT_NAME']
-        if re_auth:
-            self.get_server()
-            data['reauth'] = 'true'
-        payload['data'] = json.dumps(data)
-        http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
-        if re_auth:
-            json_response = json.loads(http_instance.response.text)
-            self.config.update_token_auth(json_response)
-        return self.__get_response_to_request__(http_instance)
+        state = self.config.load_oauth_state()
+        code_verifier = state['code_verifier']
+        csrf_token = state['csrf_token']
+        hardware_id = self.config.session['UID']
+
+        session = _req.Session()
+        for name, value in state.get('cookies', {}).items():
+            session.cookies.set(name, value)
+
+        # Step 3b: Verify the SMS OTP
+        twofa_h = {
+            'User-Agent': _BROWSER_UA,
+            'Accept': '*/*',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': _OAUTH_BASE,
+            'Referer': _OAUTH_V2_SIGNIN,
+        }
+        verify = session.post(
+            _OAUTH_V2_2FA_VERIFY,
+            headers=twofa_h,
+            data={'2fa_code': str(
+                pin), 'csrf-token': csrf_token, 'remember_me': 'false'},
+            verify=False,
+            timeout=self.config.timeout,
+        )
+        if verify.status_code != 201:
+            return {
+                'status_code': verify.status_code,
+                'is_ok': False,
+                'response': {'message': f'2FA verification failed: {verify.text}'},
+            }
+        try:
+            result = json.loads(verify.text)
+            if result.get('status') != 'auth-completed':
+                return {'status_code': verify.status_code, 'is_ok': False, 'response': result}
+        except json.JSONDecodeError:
+            pass
+
+        # Steps 4-5: Exchange code for tokens
+        return self.__pkce_exchange_code__(session, code_verifier, hardware_id)
 
     def get_networks(self):
         """
@@ -495,7 +805,7 @@ class BlinkAPI (Blink):
             the response of the server(blank if has no json format) and if is_success
         """
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v3/accounts/' + \
             self.account_id + '/homescreen'
@@ -506,11 +816,35 @@ class BlinkAPI (Blink):
 
     def __update_token__(self):
         """
-            Updates the token of the class
+        Updates the token using the OAuth refresh_token grant (no 2FA required).
+        Uses the stored refresh_token to silently obtain a new access_token.
         """
-        response = self.get_login(True)
-        self.config.update_token_auth(response['response'])
-        self.token_auth = self.config.session['TOKEN_AUTH']
+        self.get_login(re_auth=True)
+
+    def __get_tier_info__(self):
+        """
+        Calls the Blink tier endpoint to get the account_id and region server.
+        Must be called after a successful login/token refresh.
+        Updates self.account_id, self.server and the config session values.
+        """
+        payload = self.__prepare_http_request__()
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
+        endpoint = {
+            'uri': 'https://rest-prod.immedia-semi.com/api/v1/users/tier_info',
+            'certificate': False
+        }
+        http_instance = HttpRequestStandard(endpoint, payload)
+        http_instance.get_request()
+        json_response = json.loads(http_instance.response.text)
+        tier = json_response.get('tier')
+        account_id = str(json_response.get('account_id', self.account_id))
+        if tier:
+            self.set_tier(tier)
+            self.get_server()
+        if account_id:
+            self.set_account_id(account_id)
+        self.config.update_tier_info(tier, account_id)
+        return json_response
 
     def set_thumbnail(self, camera_id):
         """
@@ -525,7 +859,7 @@ class BlinkAPI (Blink):
         """
         network_id = self.__get_newtwork_id_from_camera__(camera_id)
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/network/' + \
             network_id + '/camera/' + camera_id + '/thumbnail'
@@ -547,36 +881,11 @@ class BlinkAPI (Blink):
         """
         network_id = self.__get_newtwork_id_from_camera__(owl_id)
         payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
+        payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {}
         endpoint['uri'] = self.server + '/api/v1/accounts/'+self.account_id + \
             '/networks/' + network_id + '/owls/' + owl_id + '/thumbnail'
         endpoint['certificate'] = False
-        http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
-        return self.__get_response_to_request__(http_instance)
-
-    def send_2fa(self, pin):
-        """
-            Send the 2FA pin to the server
-
-        Args:
-            pin (int): mfa recieved in the phone
-
-        Returns:
-            dict : This responses a json with the status_code,
-            the response of the server(blank if has no json format) and if is_success
-        """
-        payload = self.__prepare_http_request__()
-        payload['headers']['token-auth'] = self.token_auth
-        endpoint = {}
-        endpoint['uri'] = self.server + '/api/v4/account/' + \
-            self.account_id + '/client/'+self.client_id+'/pin/verify'
-        endpoint['certificate'] = False
-        data = {}
-        data['pin'] = pin
-        data['unique_id'] = self.unique_id
-        payload['data'] = json.dumps(data)
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()
         return self.__get_response_to_request__(http_instance)

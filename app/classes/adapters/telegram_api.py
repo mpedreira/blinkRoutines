@@ -91,7 +91,7 @@ class TelegramApi(Telegram):
         endpoint = {}
         endpoint['uri'] = basepath + token + "/sendVideo"
         endpoint['certificate'] = False
-        payload['files'] = {'video': video}
+        payload['files'] = {'video': ('video.mp4', video, 'video/mp4')}
         payload['data'] = {'chat_id': channel}
         http_instance = HttpRequestStandard(endpoint, payload)
         http_instance.post_request()

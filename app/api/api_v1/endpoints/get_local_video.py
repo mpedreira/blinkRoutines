@@ -36,29 +36,9 @@ def get_local_video(channel_id: str, cam_name: str):
     blink_instance.get_server()
     telegram_instance = TelegramApi(config_instance)
 
-    # if is_cam(cam_name):
-    #    thumb = get_camera_thumb(cam_name, blink_instance)
-    # else:
-    #    thumb = get_own_thumb(cam_name, blink_instance)
     camera_id = cam_array[cam_name]["id"]
- #   clips = get_clip(blink_instance, camera_id, 5)
- #   numero_clips = len(clips)
- #   if numero_clips == 0:
- #       response['response'] = "No hay videos"
- #       response = {}
- #       return response
- #   thumb = clips[0]
- #   clip_media = thumb['media']
-    # message = "Generado video de " + \
-    #    thumb['device_name'] + \
-    #    "("+thumb['network_name']+") a las " + thumb['created_at'] + \
-    #    " hay " + str(numero_clips) + " clips en total en esa franja"
-    # response = telegram_instance.send_message(message, channel_id)
-    # video = blink_instance.get_clip(clip_media)
-
     sync_module = get_sync_module_id(blink_instance, camera_id)
     response = blink_instance.get_local_clips(sync_module)
-    print(response)
     clips = response['response']
     numero_clips = len(clips['clips'])
     if numero_clips == 0:
