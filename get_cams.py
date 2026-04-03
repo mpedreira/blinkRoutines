@@ -62,7 +62,6 @@ def get_sync_module_from_network_id(network_id, sync_modules):
     return sync_module_id
 
 
-
 def _send_clip(telegram_instance, blink_instance, clips, channel_id):
     """Download the first clip and send it to Telegram."""
     numero_clips = len(clips['clips'])
@@ -72,7 +71,8 @@ def _send_clip(telegram_instance, blink_instance, clips, channel_id):
     video = blink_instance.get_local_clip(clips)
     clip = clips['clips'][0]
     if isinstance(video, dict):
-        telegram_instance.send_message("No he sido capaz de descargar el video", channel_id)
+        telegram_instance.send_message(
+            "No he sido capaz de descargar el video", channel_id)
         return
     video_clip = b''.join(chunk for chunk in video if chunk)
     message = (
