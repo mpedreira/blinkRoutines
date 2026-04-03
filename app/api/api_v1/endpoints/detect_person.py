@@ -31,8 +31,7 @@ def detect_person(channel_id: str, cam_name: str):
         dict: Telegram API response
     """
     config_instance = ConfigAWS()
-    cam_array = config_instance.cameras
-    cam = cam_array.get(cam_name)
+    cam = config_instance.cameras.get(cam_name)
     if not cam or not cam.get('id'):
         return {"status_code": 400, "is_ok": False,
                 "response": f"Camera '{cam_name}' not found or has no configured id"}
@@ -41,28 +40,22 @@ def detect_person(channel_id: str, cam_name: str):
     blink_instance.__set_token__()
     blink_instance.get_server()
 
-    camera_id = cam['id']
-    cam_type = cam['type']
-    if cam_type == "cam":
-        path = get_camera_thumb(blink_instance, camera_id)
+    if cam['type'] == "cam":
+        path = get_camera_thumb(blink_instance, cam['id'])
     else:
-        path = get_owl_thumb(blink_instance, camera_id)
+        path = get_owl_thumb(blink_instance, cam['id'])
 
     if not path:
         return {"status_code": 404, "is_ok": False,
                 "response": f"Could not get thumbnail for '{cam_name}'"}
 
     thumb = blink_instance.get_image(path)
-    detector = PersonDetectorRekognition(config_instance)
-    faces = detector.detect_faces(thumb)
-
-    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = build_message(cam_name, date, faces)
+    faces = PersonDetectorRekognition(config_instance).detect_faces(thumb)
+    message = build_message(cam_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), faces)
 
     telegram_instance = TelegramApi(config_instance)
     telegram_instance.send_message(message, channel_id)
-    response = telegram_instance.send_image_from_bytes(thumb, channel_id)
-    return response
+    return telegram_instance.send_image_from_bytes(thumb, channel_id)
 
 
 def build_message(cam_name, date, faces):

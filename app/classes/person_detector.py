@@ -19,7 +19,7 @@ class PersonDetector():
         self.config = config
         self.collection_id = "familia"
 
-    def detect_faces(self, image_bytes):
+    def detect_faces(self, image_bytes):  # pylint: disable=W0613
         """
             Detects faces in an image and returns who they are.
 
@@ -31,7 +31,7 @@ class PersonDetector():
         """
         return []
 
-    def register_face(self, image_bytes, person_name):
+    def register_face(self, image_bytes, person_name):  # pylint: disable=W0613
         """
             Registers a face in the collection.
 
