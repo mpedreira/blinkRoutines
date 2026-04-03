@@ -34,17 +34,3 @@ class Telegram:
         """
         message = ''
         return message
-
-    def send_image(self, image, channel):
-        """
-            Sends a image to a channel in Telegram.
-
-        Args:
-            image (str): Path to the image
-            channel (str): Channel id where the message is going to be send
-
-        Returns:
-            dict: Response of the Telegram API
-        """
-        message = ''
-        return message

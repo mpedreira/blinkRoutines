@@ -36,19 +36,6 @@ class StorageS3AWS (Storage):
         except KeyError:
             self.s3 = boto3.client('s3')
 
-    def upload_file(self, file_path, file_key):
-        """
-            Upload a file to S3
-
-        Args:
-            file_path (str): Path to the file to upload
-            file_key (str): Path of the file in S3
-
-        Returns:
-            _type_: _description_
-        """
-        return self.s3.upload_file(file_path, self.bucket, file_key)
-
     def put_object(self, file_data, file_key):
         """
             Put an object in S3
@@ -74,16 +61,3 @@ class StorageS3AWS (Storage):
         """
         bucket = self.config.bucket
         return self.s3.get_object(Bucket=bucket, Key=file_key)
-
-    def get_file(self, file_name, file_key):
-        """
-            Download a file from S3
-        Args:
-            file_name (str): Filename where to save the file
-            file_key (str): Path of the file in S3
-
-        Returns:
-            _type_: _description_
-        """
-        bucket = self.config.bucket
-        return self.s3.download_file(bucket, file_key, file_name)

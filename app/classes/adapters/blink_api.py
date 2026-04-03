@@ -134,16 +134,6 @@ class BlinkAPI (Blink):
             self.set_token_auth(token)
         self.set_client_id(self.config.session['CLIENT_ID'])
 
-    def __get_basics__(self):
-        """
-            Gets the basic information of the blink account
-        """
-        response = self.get_login()
-        self.basic_info = response['response']
-        self.get_server()
-        self.get_client_id()
-        self.get_account_id()
-
     def __prepare_http_request__(self):
         """
             The http requests are almost the same in this integration
@@ -249,28 +239,6 @@ class BlinkAPI (Blink):
         http_instance.get_request()
         result = http_instance.response.content
         return result
-
-    def set_liveview(self, camera_id):
-        """
-            Sets a livestreaming from the server
-
-        Args:
-            camera_id (str): Id of the cammera
-
-        Returns:
-            dict: json with the response from the server
-        """
-        payload = self.__prepare_http_request__()
-        payload['headers']['Authorization'] = "Bearer " + self.token_auth
-        endpoint = {}
-        network_id = self.__get_newtwork_id_from_camera__(camera_id)
-        endpoint['uri'] = self.server + "/api/v5/accounts/" + self.account_id + \
-            "/networks/" + network_id + "/cameras/" + camera_id + "/liveview"
-        endpoint['certificate'] = False
-        payload['data'] = {"intent": "liveview", "diagnostic": True}
-        http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
-        return self.__get_response_to_request__(http_instance)
 
     def get_command(self, network_id, command_id):
         """
@@ -502,27 +470,6 @@ class BlinkAPI (Blink):
             if str(owl['id']) == camera_id:
                 return str(owl['network_id'])
         return ''
-
-    def get_camera_clip(self, camera_id):
-        """_summary_
-
-        Args:
-            network_id (_type_): _description_
-            camera_id (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        network_id = self.__get_newtwork_id_from_camera__(camera_id)
-        payload = self.__prepare_http_request__()
-        payload['headers']['Authorization'] = "Bearer " + self.token_auth
-        endpoint = {}
-        endpoint['uri'] = self.server + '/network/' + \
-            network_id + '/camera/' + camera_id + '/clip'
-        endpoint['certificate'] = False
-        http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
-        return self.__get_response_to_request__(http_instance)
 
     def disarm_network(self, network_id):
         """
@@ -857,13 +804,6 @@ class BlinkAPI (Blink):
         http_instance.get_request()
         return self.__get_response_to_request__(http_instance)
 
-    def __update_token__(self):
-        """
-        Updates the token using the OAuth refresh_token grant (no 2FA required).
-        Uses the stored refresh_token to silently obtain a new access_token.
-        """
-        self.get_login(re_auth=True)
-
     def __get_tier_info__(self):
         """
         Calls the Blink tier endpoint to get the account_id and region server.
@@ -873,7 +813,7 @@ class BlinkAPI (Blink):
         payload = self.__prepare_http_request__()
         payload['headers']['Authorization'] = "Bearer " + self.token_auth
         endpoint = {
-            'uri': 'https://rest-prod.immedia-semi.com/api/v1/users/tier_info',
+            'uri': _TIER_URL,
             'certificate': False
         }
         http_instance = HttpRequestStandard(endpoint, payload)

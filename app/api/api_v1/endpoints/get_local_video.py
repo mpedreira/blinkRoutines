@@ -3,17 +3,12 @@ This file contains the endpoint to get the images from the cameras in telegram
 """
 # pylint: disable=E0401,R0801,E0611
 
-from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
 
-CAM_ID = {}
-EMPTY = ""
-
 router = APIRouter()
-""" This creates the new API path /arm/{newtork_id} """
 
 
 @router.get("/{channel_id}/{cam_name}")
@@ -36,7 +31,10 @@ def get_local_video(channel_id: str, cam_name: str):
     blink_instance.get_server()
     telegram_instance = TelegramApi(config_instance)
 
-    camera_id = cam_array[cam_name]["id"]
+    camera_id = cam_array.get(cam_name, {}).get("id")
+    if not camera_id:
+        return {"status_code": 400, "is_ok": False,
+                "response": f"Camera '{cam_name}' not found or has no configured id"}
     sync_module = get_sync_module_id(blink_instance, camera_id)
     response = blink_instance.get_local_clips(sync_module)
     clips = response['response']
@@ -118,94 +116,3 @@ def get_network_id(camera_id, cameras):
             network_id = camera['network_id']
             return network_id
     return network_id
-
-
-def get_clip(blink_instance, camera_id, delta):
-    """
-        Gets the clip of the camera and returns it
-
-    Args:
-        blink_instance (class): class of blink api
-        camera_id (str): Camera id
-        delta (int): Delta in minutes
-
-    Returns:
-        str: Path to the clip
-    """
-    formatted_date = get_date(delta)
-    response = blink_instance.get_video_events(formatted_date)
-    clips = []
-    for clip in response['response']['media']:
-        if clip['device_id'] == int(camera_id):
-            clips.append(clip)
-    return clips
-
-
-def get_date(delta, app_timezone=0):
-    """
-        Gets the date in the format that the blink api needs
-
-    Args:
-        delta (int): Minutes to substract from now.
-    Returns:
-        str: Date
-    """
-    european_timezone = timezone(timedelta(hours=app_timezone))
-    now = datetime.now(european_timezone) - timedelta(minutes=delta)
-    formatted_date = now.strftime('%Y-%m-%dT%H:%M:%S+0000')
-    formatted_date = formatted_date.replace(':', '%3A')
-    return formatted_date
-
-
-def get_own_thumb(cam_name, blink_instance):
-    """
-        Gets the uri of the thumbnail of the owl and returns it
-
-    Args:
-        cam_name (str): name of the camera
-        blink_instance (class): class of the blink api
-
-    Returns:
-        str: uri of the thumbnail
-    """
-    path = ''
-    owl_id = CAM_ID[cam_name]["id"]
-    response = blink_instance.set_owl_thumbnail(owl_id)
-    response = blink_instance.get_home_screen_info()
-    for owl in response['response']['owls']:
-        if owl['id'] == int(owl_id):
-            path = owl['thumbnail']
-    return path
-
-
-def get_camera_thumb(cam_name, blink_instance):
-    """
-        Gets the uri of the thumbnail of the camera and returns it
-
-    Args:
-        cam_name (str): name of the camera
-        blink_instance (class): class of the blink api
-
-    Returns:
-        str: uri of the thumbnail
-    """
-    path = ''
-    cam_id = CAM_ID[cam_name]["id"]
-    response = blink_instance.set_thumbnail(cam_id)
-    response = blink_instance.get_home_screen_info()
-    for camera in response['response']['cameras']:
-        if camera['id'] == int(cam_id):
-            path = camera['thumbnail']
-    return path
-
-
-def is_cam(cam_name):
-    """
-     Determinates if the camera is a cam or a owl
-
-    Args:
-        cam_name (str): Name of the camera
-    Returns:
-        bool : True if it is a camera, false if it is a owl
-    """
-    return CAM_ID[cam_name]["type"] == "cam"

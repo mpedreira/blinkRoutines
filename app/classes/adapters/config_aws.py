@@ -46,14 +46,9 @@ class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
         self.session = {}
         self.session['TIER'] = self.__get_parameter__(
             'blink_tier', 'prod')
-        self.cameras = {
-            "Entrada": {"id": self.__get_parameter__('camera_id_entrada', ''), "type": "cam"},
-            "Finca1": {"id": self.__get_parameter__('camera_id_finca1', ''), "type": "cam"},
-            "Finca2": {"id": self.__get_parameter__('camera_id_finca2', ''), "type": "cam"},
-            "Coruna": {"id": self.__get_parameter__('camera_id_coruna', ''), "type": "cam"},
-            "Finca3": {"id": self.__get_parameter__('camera_id_finca3', ''), "type": "cam"},
-            "Mateo": {"id": self.__get_parameter__('camera_id_mateo', ''), "type": "owl"}
-        }
+        cameras_raw = self.__get_parameter__('cameras', {})
+        self.cameras = cameras_raw if isinstance(
+            cameras_raw, dict) else json.loads(cameras_raw)
         self.session['ACCOUNT_ID'] = self.__get_parameter__(
             'blink_account_id', '')
         self.session['CLIENT_NAME'] = 'Lambda AWS'

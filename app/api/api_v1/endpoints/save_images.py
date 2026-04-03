@@ -1,7 +1,7 @@
 """
 This file contains the endpoint to get the images from the cameras in telegram
 """
-# pylint: disable=E0401,R0801,E0611
+# pylint: disable=E0401,R0801,E0611,R0914
 
 from datetime import datetime
 from fastapi import APIRouter
@@ -11,7 +11,6 @@ from app.classes.adapters.storage_s3_aws import StorageS3AWS
 
 
 router = APIRouter()
-""" This creates the new API path /arm/{newtork_id} """
 
 
 @router.get("/{cam_name}")
@@ -32,8 +31,12 @@ def get_images(cam_name: str):
     s3_instance = StorageS3AWS(config_instance)
     blink_instance.__set_token__()
     blink_instance.get_server()
-    camera_id = cam_array[cam_name]['id']
-    cam_type = cam_array[cam_name]['type']
+    cam = cam_array.get(cam_name)
+    if not cam or not cam.get('id'):
+        return {"status_code": 400, "is_ok": False,
+                "response": f"Camera '{cam_name}' not found or has no configured id"}
+    camera_id = cam['id']
+    cam_type = cam['type']
     s3_path = config_instance.folder
     if is_camera(cam_type):
         blink_instance.set_thumbnail(camera_id)
@@ -65,6 +68,4 @@ def is_camera(cam_type):
     Returns:
         bool: True if it is a cam, False if it is a owl
     """
-    if cam_type == "cam":
-        return True
-    return False
+    return cam_type == "cam"

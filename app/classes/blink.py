@@ -27,7 +27,6 @@ class Blink ():
         self.basic_info = {}
         self.basic_info['account'] = {}
         self.basic_info['account']['tier'] = 'prod'
-        self.unique_id = self.config.session['UID']
 
     def get_client_id(self):
         """
@@ -52,16 +51,6 @@ class Blink ():
         """
         self.account_id = self.basic_info['account']['account_id']
         return self.account_id
-
-    def get_token_auth(self):
-        """
-            Taking the basic information of the blink account,
-            gets the token auth
-        Returns:
-            str: Returns de API token for the client
-        """
-        self.token_auth = self.basic_info['auth']['token']
-        return self.token_auth
 
     def set_client_id(self, client_id):
         """

@@ -5,9 +5,6 @@ import requests
 from app.classes.http_request import HttpRequest
 
 
-STATUS_CODE = {'OK': {201, 200, 204}, 'ERROR': {401, 400, 500, 404}}
-
-
 class HttpRequestStandard(HttpRequest):
     """Module for HTTP standard connection"""
 

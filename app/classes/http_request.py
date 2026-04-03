@@ -21,34 +21,9 @@ class HttpRequest:
         self.payload['headers'] = payload['headers']
         self.payload['data'] = payload['data']
         self.payload['timeout'] = payload['timeout']
-        self.payload['files'] = ''
-        if 'files' in payload.keys():
-            self.payload['files'] = payload['files']
+        self.payload['files'] = payload.get('files', '')
         self.response = ''
         urllib3.disable_warnings()
-
-    def update_data(self, endpoint, payload):
-        """ This module update the basic configuration defined in __init__
-
-        Args:
-            endpoint (list): 
-                    JSON with the info you want to do the request. 
-                    At least, you need the uri and the certificate
-            payload (list): 
-                    JSON with the info you want to do the payload. 
-                    At least, you need the auth, headers, data and timeout
-        """
-        self.endpoint = {}
-        self.payload = {}
-        self.endpoint['uri'] = endpoint['uri']
-        self.payload['auth'] = payload['auth']
-        self.endpoint['certificate'] = endpoint['certificate']
-        self.payload['headers'] = payload['headers']
-        self.payload['data'] = payload['data']
-        self.payload['timeout'] = payload['timeout']
-        if 'files' in payload.keys():
-            self.payload['files'] = payload['files']
-        self.payload['files'] = payload['files']
 
     def get_json_response(self):
         """Formats the response in JSON

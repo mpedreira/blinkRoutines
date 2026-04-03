@@ -9,11 +9,7 @@ from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
 
-CAM_ID = {}
-EMPTY = ""
-
 router = APIRouter()
-""" This creates the new API path /arm/{newtork_id} """
 
 
 @router.get("/{channel_id}/{cam_name}")
@@ -35,7 +31,10 @@ def get_local_video(channel_id: str, cam_name: str):
     blink_instance.__set_token__()
     blink_instance.get_server()
     telegram_instance = TelegramApi(config_instance)
-    camera_id = cam_array[cam_name]["id"]
+    camera_id = cam_array.get(cam_name, {}).get("id")
+    if not camera_id:
+        return {"status_code": 400, "is_ok": False,
+                "response": f"Camera '{cam_name}' not found or has no configured id"}
     clips = get_clip(blink_instance, camera_id, 5)
     numero_clips = len(clips)
     if numero_clips == 0:
@@ -56,7 +55,6 @@ def get_local_video(channel_id: str, cam_name: str):
         response = telegram_instance.send_message(message, channel_id)
         return response
     video_clip = b''.join(chunk for chunk in video if chunk)
-    response = telegram_instance.send_message(message, channel_id)
     response = telegram_instance.send_video(video_clip, channel_id)
     return response
 
