@@ -51,7 +51,8 @@ def detect_person(channel_id: str, cam_name: str):
 
     thumb = blink_instance.get_image(path)
     faces = PersonDetectorRekognition(config_instance).detect_faces(thumb)
-    message = build_message(cam_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), faces)
+    message = build_message(
+        cam_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), faces)
 
     telegram_instance = TelegramApi(config_instance)
     telegram_instance.send_message(message, channel_id)

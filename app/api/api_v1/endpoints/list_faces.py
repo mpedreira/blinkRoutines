@@ -10,7 +10,7 @@ from app.classes.adapters.person_detector_rekognition import PersonDetectorRekog
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 def list_faces():
     """
         Lists all registered faces in the Rekognition collection.
