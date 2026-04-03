@@ -32,21 +32,21 @@ def arm(network_id: int):
     return response
 
 
-def arm_network(blink_instance, network_id, retry=False):
+def arm_network(blink_instance, network_id, retry=False):  # noqa: W0613
     """
-        Commands that you may do if you want to arm your 
+        Commands that you may do if you want to arm your
         Blink Camera
     Args:
         blink_instance (Class): An instance of Blink
         network_id (int): ID of the network you want to arm
-        retry (bool, optional): Defines if it is a first attent to login or not.
-                If is not the first attent, you need to update your token 
+        retry (bool, optional): Reserved for future re-auth logic.
                 Defaults to False.
 
     Returns:
         dict : This responses a json with the status_code,
             the response of the server(blank if has no json format) and if is_success
     """
+    _ = retry  # token refresh is handled automatically inside __set_token__
     blink_instance.__set_token__()
     blink_instance.get_server()
     return blink_instance.arm_network(str(network_id))

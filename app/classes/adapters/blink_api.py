@@ -16,6 +16,19 @@ from app.classes.adapters.http_request_standard import HttpRequestStandard
 WAIT_CODE = 409
 MAX_RETRIES = 5
 
+
+class BlinkAuthError(RuntimeError):
+    """Raised when a Blink authentication step fails."""
+
+
+class BlinkOAuthError(BlinkAuthError):
+    """Raised when an OAuth token exchange or refresh fails."""
+
+
+class BlinkLoginError(BlinkAuthError):
+    """Raised when the initial PKCE login flow fails."""
+
+
 # ── OAuth v2 PKCE constants (inspired by blinkpy dev branch) ──────────────────
 _OAUTH_BASE = "https://api.oauth.blink.com"
 _OAUTH_V2_AUTHORIZE = f"{_OAUTH_BASE}/oauth/v2/authorize"
@@ -41,7 +54,7 @@ def _is_token_expired(token):
         payload_b64 += '=' * (4 - len(payload_b64) % 4)
         payload = json.loads(base64.urlsafe_b64decode(payload_b64))
         return time() >= payload.get('exp', 0) - 60
-    except Exception:
+    except (IndexError, ValueError, KeyError):
         return True
 
 
@@ -112,7 +125,7 @@ class BlinkAPI (Blink):
         if _is_token_expired(token):
             try:
                 self.__oauth_refresh__()
-            except Exception as exc:
+            except BlinkOAuthError as exc:
                 raise RuntimeError(
                     'Access token expired and refresh failed. '
                     'Re-authenticate via POST /get_basic_config.'
@@ -369,61 +382,70 @@ class BlinkAPI (Blink):
         response['response']['sync_module_id'] = str(sync_module)
         return response
 
+    def _build_clip_endpoint(self, network_id, sync_module_id, manifest_id, clip_id):
+        """Build the URI for a local storage clip request."""
+        return (
+            f"{self.server}/api/v1/accounts/{self.account_id}"
+            f"/networks/{network_id}/sync_modules/{sync_module_id}"
+            f"/local_storage/manifest/{manifest_id}/clip/request/{clip_id}"
+        )
+
+    def _wait_for_command(self, command_id, network_id):
+        """Poll until a sync-module command completes or timeout is reached."""
+        if command_id:
+            for _ in range(MAX_RETRIES * 4):
+                cmd = self.get_command(str(network_id), str(command_id))
+                if cmd.get('response', {}).get('complete'):
+                    return
+                sleep(1)
+        else:
+            sleep(6)
+
     def get_local_clip(self, clips):
-        """
-            Gets the local clip from the server
+        """Gets the local clip from the server.
 
         Args:
-            clips (array): array of clips returned by the server
+            clips (dict): clips dict returned by get_local_clips()
 
         Returns:
-            chunk : returns the clip in mp4 format
+            iterator | dict: chunk iterator on success, error dict otherwise
         """
+        if len(clips['clips']) == 0:
+            return {'status_code': 404, 'is_ok': False,
+                    'response': {'message': 'No clips found'}}
+
         network_id = clips['network_id']
         sync_module_id = clips['sync_module_id']
         manifest_id = clips['manifest_id']
-        payload = self.__prepare_http_request__()
-        payload['headers']['Authorization'] = "Bearer " + self.token_auth
-        endpoint = {}
-        endpoint['certificate'] = False
-        numero_clips = len(clips['clips'])
-        if numero_clips == 0:
-            response = {}
-            response['status_code'] = 404
-            response['is_ok'] = False
-            response['response'] = {"message": "No clips found"}
-            return response
         clip_id = clips['clips'][0]['id']
-        endpoint['uri'] = self.server + '/api/v1/accounts/' + self.account_id +  \
-            '/networks/'+network_id + '/sync_modules/' + sync_module_id + \
-            '/local_storage/manifest/' + manifest_id + '/clip/request/' + clip_id
+
+        payload = self.__prepare_http_request__()
+        payload['headers']['Authorization'] = 'Bearer ' + self.token_auth
+        endpoint = {
+            'certificate': False,
+            'uri': self._build_clip_endpoint(
+                network_id, sync_module_id, manifest_id, clip_id
+            ),
+        }
         http_instance = HttpRequestStandard(endpoint, payload)
-        # POST: ask sync module to upload clip to cloud
         http_instance.post_request()
+
         post_resp = http_instance.get_json_response()
-        # Wait for upload command to complete before downloading
-        command_id = post_resp.get('id') if isinstance(
-            post_resp, dict) else None
-        cmd_network_id = post_resp.get('network_id', network_id) if isinstance(
-            post_resp, dict) else network_id
-        if command_id:
-            for _ in range(MAX_RETRIES * 4):  # poll up to 20 s
-                cmd = self.get_command(str(cmd_network_id), str(command_id))
-                if cmd.get('response', {}).get('complete'):
-                    break
-                sleep(1)
-        else:
-            sleep(6)  # fallback if no command_id in response
-        # GET to download with retries
+        is_dict = isinstance(post_resp, dict)
+        cmd_id = post_resp.get('id') if is_dict else None
+        cmd_net = post_resp.get(
+            'network_id', network_id) if is_dict else network_id
+        self._wait_for_command(cmd_id, cmd_net)
+
         for _ in range(MAX_RETRIES):
             http_instance.get_request()
             if http_instance.response.status_code == 200:
                 break
             sleep(3)
+
         if http_instance.response.status_code != 200:
             return self.__get_response_to_request__(http_instance)
-        result = http_instance.response.iter_content(chunk_size=1024)
-        return result
+        return http_instance.response.iter_content(chunk_size=1024)
 
     def set_sync_module_request(self, sync_module, network_id):
         """
@@ -570,7 +592,7 @@ class BlinkAPI (Blink):
             self.token_auth = self.config.session['TOKEN_AUTH']
             self.__get_tier_info__()
         else:
-            raise Exception(f"Token refresh failed: {json_response}")
+            raise BlinkOAuthError(f"Token refresh failed: {json_response}")
         return {'status_code': response.status_code, 'is_ok': True, 'response': json_response}
 
     def __pkce_initial_login__(self):
@@ -619,7 +641,7 @@ class BlinkAPI (Blink):
         )
         csrf_token = _extract_csrf(signin_page.text)
         if not csrf_token:
-            raise Exception(
+            raise BlinkLoginError(
                 'Failed to extract CSRF token from Blink signin page')
 
         # Step 3: Submit credentials
@@ -659,7 +681,7 @@ class BlinkAPI (Blink):
             # Direct success (no 2FA configured on this account)
             return self.__pkce_exchange_code__(session, code_verifier, hardware_id)
 
-        raise Exception(
+        raise BlinkLoginError(
             f'PKCE signin failed: HTTP {signin.status_code} — {signin.text}')
 
     def __pkce_exchange_code__(self, session, code_verifier, hardware_id=None):
@@ -684,7 +706,7 @@ class BlinkAPI (Blink):
         location = auth_resp.headers.get('Location', '')
         code = parse_qs(urlparse(location).query).get('code', [None])[0]
         if not code:
-            raise Exception(
+            raise BlinkOAuthError(
                 f'Failed to get authorization code. Redirect: {location}')
 
         # Step 5: Exchange code for tokens
@@ -716,7 +738,7 @@ class BlinkAPI (Blink):
             self.token_auth = self.config.session['TOKEN_AUTH']
             self.__get_tier_info__()
         else:
-            raise Exception(f'Token exchange failed: {json_response}')
+            raise BlinkOAuthError(f'Token exchange failed: {json_response}')
         return {'status_code': token_resp.status_code, 'is_ok': True, 'response': json_response}
 
     def send_2fa(self, pin):

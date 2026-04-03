@@ -3,8 +3,8 @@
 # -*- coding: utf-8 -*-
 """Module for static configuration of Claroty"""
 
-import os
 import json
+import os
 import boto3
 from app.classes.config import Config
 
@@ -72,20 +72,18 @@ class ConfigAWS (Config):
         self.__set_parameter__(f'{base}_pkce_verifier',
                                code_verifier, 'String')
         self.__set_parameter__(f'{base}_pkce_csrf', csrf_token, 'String')
-        import json as _j
         self.__set_parameter__(f'{base}_pkce_cookies',
-                               _j.dumps(cookies), 'String')
+                               json.dumps(cookies), 'String')
 
     def load_oauth_state(self):
         """
             Load intermediate PKCE state from SSM Parameter Store.
         """
-        import json as _j
         base = self.parameter_store.rstrip('/')
         try:
             cookies_raw = self.__get_parameter__(f'{base}_pkce_cookies')
-            cookies = _j.loads(cookies_raw) if cookies_raw else {}
-        except Exception:
+            cookies = json.loads(cookies_raw) if cookies_raw else {}
+        except (json.JSONDecodeError, KeyError, ValueError):
             cookies = {}
         return {
             'code_verifier': self.__get_parameter__(f'{base}_pkce_verifier'),

@@ -32,7 +32,7 @@ def _ensure_config():
                 json.dump({}, _f)
 
 
-class ConfigAWS (Config):
+class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
     """Module for static configuration of Blink"""
 
     def __init__(self):
