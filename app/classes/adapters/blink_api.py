@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Module for using Blink Cameras through API"""
-# pylint: disable=R0904,R0801
+# pylint: disable=R0904,R0801,E0401
 import hashlib
 import base64
 import secrets
