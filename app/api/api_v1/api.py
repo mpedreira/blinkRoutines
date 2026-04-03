@@ -7,6 +7,7 @@ from fastapi import APIRouter
 
 from .endpoints import arm, disarm, get_image, get_local_video, update_owl, update_thumb
 from .endpoints import get_basic_config, send_2fa, telegram, save_images, get_remote_video
+from .endpoints import detect_person, register_face, list_faces, train_face
 
 
 router = APIRouter()
@@ -28,3 +29,11 @@ router.include_router(get_remote_video.router,
 router.include_router(get_image.router, prefix="/get_image", tags=["Camera"])
 router.include_router(save_images.router,
                       prefix="/save_images", tags=["Camera"])
+router.include_router(detect_person.router,
+                      prefix="/detect_person", tags=["Detection"])
+router.include_router(register_face.router,
+                      prefix="/register_face", tags=["Detection"])
+router.include_router(list_faces.router,
+                      prefix="/list_faces", tags=["Detection"])
+router.include_router(train_face.router,
+                      prefix="/train_face", tags=["Detection"])

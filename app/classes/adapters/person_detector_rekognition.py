@@ -1,0 +1,161 @@
+"""
+    PersonDetectorRekognition - Amazon Rekognition adapter for face detection.
+"""
+# pylint: disable=E0401,R0801
+import boto3
+from botocore.exceptions import ClientError
+from app.classes.person_detector import PersonDetector, UNKNOWN_PERSON
+
+
+class PersonDetectorRekognition(PersonDetector):
+    """
+    Adapter that uses Amazon Rekognition Face Collections for person detection.
+
+    Args:
+        PersonDetector (class): Parent class
+    """
+
+    def __init__(self, config):
+        """
+        Init method for PersonDetectorRekognition.
+
+        Args:
+            config (class): Basic configuration with AWS credentials
+        """
+        super().__init__(config)
+        try:
+            key_id = config.auth.get('aws_access_key_id', '')
+            secret = config.auth.get('aws_secret_access_key', '')
+            region = config.auth.get('region_name', 'us-east-1')
+            if key_id and secret:
+                self.client = boto3.client(
+                    'rekognition',
+                    aws_access_key_id=key_id,
+                    aws_secret_access_key=secret,
+                    region_name=region
+                )
+            else:
+                self.client = boto3.client('rekognition', region_name=region)
+        except KeyError:
+            self.client = boto3.client('rekognition')
+        self._ensure_collection()
+
+    def _ensure_collection(self):
+        """Creates the face collection if it does not exist."""
+        try:
+            self.client.create_collection(CollectionId=self.collection_id)
+        except ClientError as err:
+            if err.response['Error']['Code'] != 'ResourceAlreadyExistsException':
+                raise
+
+    def detect_faces(self, image_bytes):
+        """
+            Searches for known faces in the image using the Rekognition collection.
+
+        Args:
+            image_bytes (bytes): Image to analyze
+
+        Returns:
+            list: List of dicts with 'name' and 'confidence' for each face found.
+                  Unknown faces appear as UNKNOWN_PERSON.
+        """
+        try:
+            response = self.client.detect_faces(
+                Image={'Bytes': image_bytes},
+                Attributes=['DEFAULT']
+            )
+        except ClientError:
+            return []
+
+        face_count = len(response.get('FaceDetails', []))
+        if face_count == 0:
+            return []
+
+        try:
+            search_response = self.client.search_faces_by_image(
+                CollectionId=self.collection_id,
+                Image={'Bytes': image_bytes},
+                FaceMatchThreshold=80,
+                MaxFaces=10
+            )
+        except ClientError:
+            return [{'name': UNKNOWN_PERSON, 'confidence': 0}] * face_count
+
+        matched_names = []
+        for match in search_response.get('FaceMatches', []):
+            matched_names.append({
+                'name': match['Face']['ExternalImageId'],
+                'confidence': round(match['Face']['Confidence'], 2)
+            })
+
+        unmatched = face_count - len(matched_names)
+        for _ in range(unmatched):
+            matched_names.append({'name': UNKNOWN_PERSON, 'confidence': 0})
+
+        return matched_names
+
+    def register_face(self, image_bytes, person_name):
+        """
+            Indexes a face into the Rekognition collection.
+
+        Args:
+            image_bytes (bytes): Image with the face to register
+            person_name (str): Name to associate with the face
+
+        Returns:
+            dict: Result with 'is_ok', 'faces_indexed' and 'person_name'
+        """
+        try:
+            response = self.client.index_faces(
+                CollectionId=self.collection_id,
+                Image={'Bytes': image_bytes},
+                ExternalImageId=person_name,
+                DetectionAttributes=['DEFAULT']
+            )
+        except ClientError as err:
+            return {
+                'is_ok': False,
+                'faces_indexed': 0,
+                'person_name': person_name,
+                'error': str(err)
+            }
+
+        indexed = len(response.get('FaceRecords', []))
+        return {
+            'is_ok': indexed > 0,
+            'faces_indexed': indexed,
+            'person_name': person_name
+        }
+
+    def list_faces(self):
+        """
+            Lists all registered faces in the collection.
+
+        Returns:
+            dict: Result with 'is_ok', 'faces' list and 'face_count'
+        """
+        try:
+            response = self.client.list_faces(
+                CollectionId=self.collection_id,
+                MaxResults=100
+            )
+        except ClientError as err:
+            return {
+                'is_ok': False,
+                'faces': [],
+                'face_count': 0,
+                'error': str(err)
+            }
+
+        faces = []
+        for face in response.get('FaceRecords', response.get('Faces', [])):
+            faces.append({
+                'face_id': face.get('FaceId', ''),
+                'person_name': face.get('ExternalImageId', UNKNOWN_PERSON),
+                'confidence': round(face.get('Confidence', 0), 2)
+            })
+        return {
+            'is_ok': True,
+            'faces': faces,
+            'face_count': len(faces)
+        }
