@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta
+"""Script for testing Blink local video retrieval and Telegram delivery."""
 from app.classes.adapters.blink_api import BlinkAPI
-from app.classes.adapters.config_static_aws import ConfigStatic
+from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
-from app.classes.adapters.http_request_standard import HttpRequestStandard
 
 
 def get_sync_module_id(blink_instance, camera_id):
@@ -63,55 +62,46 @@ def get_sync_module_from_network_id(network_id, sync_modules):
     return sync_module_id
 
 
-config_instance = ConfigStatic()
-blink_instance = BlinkAPI(config_instance)
-telegram_instance = TelegramApi(config_instance)
+
+def _send_clip(telegram_instance, blink_instance, clips, channel_id):
+    """Download the first clip and send it to Telegram."""
+    numero_clips = len(clips['clips'])
+    if numero_clips == 0:
+        print("No hay videos")
+        return
+    video = blink_instance.get_local_clip(clips)
+    clip = clips['clips'][0]
+    if isinstance(video, dict):
+        telegram_instance.send_message("No he sido capaz de descargar el video", channel_id)
+        return
+    video_clip = b''.join(chunk for chunk in video if chunk)
+    message = (
+        "Generado video de " + clip['camera_name'] +
+        " a las " + clip['created_at'] +
+        " hay " + str(numero_clips) + " clips en total en esa franja"
+    )
+    telegram_instance.send_message(message, channel_id)
+    telegram_instance.send_video(video_clip, channel_id)
 
 
-def prepare_payload(config):
-    payload = {}
-    payload['config'] = config
-    payload['headers'] = {
-        'Content-Type': 'application/json'
-    }
-    payload['timeout'] = config.timeout
-    payload['data'] = ''
-    payload['auth'] = ''
-    return payload
+def main():
+    """Entry point: fetch local clip and send to Telegram."""
+    config_instance = ConfigAWS()
+    blink_instance = BlinkAPI(config_instance)
+    telegram_instance = TelegramApi(config_instance)
+
+    blink_instance.__set_token__()
+    blink_instance.get_server()
+    blink_instance.set_thumbnail('566211')
+
+    channel_id = "-4572906427"
+    cam_name = "Entrada"
+    camera_id = config_instance.cameras[cam_name]["id"]
+    sync_module = get_sync_module_id(blink_instance, camera_id)
+    response = blink_instance.get_local_clips(sync_module)
+    clips = response['response']
+    _send_clip(telegram_instance, blink_instance, clips, channel_id)
 
 
-blink_instance.__set_token__()
-blink_instance.get_server()
-response = blink_instance.set_thumbnail('566211')
-response = blink_instance.get_home_screen_info()
-# Obtener la fecha y hora actual
-now = datetime.utcnow() - timedelta(minutes=5)
-
-# Formatear la fecha como "2024-10-28T09:58:14+0000"
-formatted_date = now.strftime('%Y-%m-%dT%H:%M:%S+0000')
-
-# Reemplazar ':' por '%3A' para que coincida con el formato solicitado
-formatted_date = formatted_date.replace(':', '%3A')
-channel_id = "-4572906427"
-cam_name = "Entrada"
-cam_array = config_instance.cameras
-camera_id = cam_array[cam_name]["id"]
-sync_module = get_sync_module_id(blink_instance, camera_id)
-response = blink_instance.get_local_clips(sync_module)
-clips = response['response']
-numero_clips = len(clips['clips'])
-if numero_clips == 0:
-    response = {}
-    response['response'] = "No hay videos"
-video = blink_instance.get_local_clip(clips)
-clip = clips['clips'][0]
-if type(video) == dict:
-    message = "No he sido capaz de descargar el video"
-    response = telegram_instance.send_message(message, channel_id)
-video_clip = b''.join(chunk for chunk in video if chunk)
-message = "Generado video de " + \
-    clip['camera_name'] + \
-    " a las " + clip['created_at'] + \
-    " hay " + str(numero_clips) + " clips en total en esa franja"
-response = telegram_instance.send_message(message, channel_id)
-response = telegram_instance.send_video(video_clip, channel_id)
+if __name__ == '__main__':
+    main()
