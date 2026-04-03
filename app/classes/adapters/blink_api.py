@@ -7,7 +7,7 @@ import base64
 import secrets
 import json
 from html.parser import HTMLParser
-from time import sleep
+from time import sleep, time
 from urllib.parse import urlencode, urlparse, parse_qs
 import requests as _req
 from app.classes.blink import Blink
@@ -32,6 +32,17 @@ _BROWSER_UA = (
     "Version/26.1 Mobile/15E148 Safari/604.1"
 )
 _TOKEN_UA = "Blink/2511191620 CFNetwork/3860.200.71 Darwin/25.1.0"
+
+
+def _is_token_expired(token):
+    """Decode JWT exp claim (no signature check). Returns True if expired or within 60 s."""
+    try:
+        payload_b64 = token.split('.')[1]
+        payload_b64 += '=' * (4 - len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        return time() >= payload.get('exp', 0) - 60
+    except Exception:
+        return True
 
 
 def _generate_pkce_pair():
@@ -97,7 +108,17 @@ class BlinkAPI (Blink):
     def __set_token__(self):
         self.set_tier(self.config.session['TIER'])
         self.set_account_id(self.config.session['ACCOUNT_ID'])
-        self.set_token_auth(self.config.session['TOKEN_AUTH'])
+        token = self.config.session['TOKEN_AUTH']
+        if _is_token_expired(token):
+            try:
+                self.__oauth_refresh__()
+            except Exception as exc:
+                raise RuntimeError(
+                    'Access token expired and refresh failed. '
+                    'Re-authenticate via POST /get_basic_config.'
+                ) from exc
+        else:
+            self.set_token_auth(token)
         self.set_client_id(self.config.session['CLIENT_ID'])
 
     def __get_basics__(self):
