@@ -103,7 +103,14 @@ class SpotifyAPI(Spotify):
         return resp.ok
 
     def _play(self, uris, device_id):
-        """Start playback of the given episode URIs on the given device."""
+        """Transfer playback to device and start playing the given episode URIs."""
+        # Transfer playback to device first (wakes it up if inactive)
+        _req.put(
+            f"{_API_BASE}/me/player",
+            headers=self._headers(json_content=True),
+            json={'device_ids': [device_id], 'play': False},
+            verify=False, timeout=10
+        )
         return _req.put(
             f"{_API_BASE}/me/player/play",
             headers=self._headers(json_content=True),
@@ -152,21 +159,3 @@ class SpotifyAPI(Spotify):
             'status_code': play_resp.status_code,
             'episodes_added': len(uris)
         }
-
-    def play_stored_queue(self):
-        """
-            Plays the previously built queue without rebuilding it.
-            Requires an active Spotify session on the device.
-
-        Returns:
-            dict: Result with is_ok and status_code
-        """
-        self._refresh_token()
-        uris = self.config.spotify.get('queue_uris', [])
-        if not uris:
-            return {'is_ok': False,
-                    'response': 'No stored queue. Call play_music?play=false first.'}
-        device_id = self.config.spotify['device_id']
-        play_resp = self._play(uris, device_id)
-        return {'is_ok': play_resp.ok, 'status_code': play_resp.status_code,
-                'episodes_playing': len(uris)}
