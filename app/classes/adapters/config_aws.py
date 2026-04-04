@@ -74,6 +74,23 @@ class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
         self.bucket = self.__get_parameter__('aws_bucket', '')
         self.folder = self.__get_parameter__('aws_folder', '')
         self.table = self.__get_parameter__('aws_table', '')
+        spotify_podcasts_raw = self.__get_parameter__('spotify_podcasts', [])
+        self.spotify = {
+            'client_id': self.__get_parameter__('spotify_client_id', ''),
+            'client_secret': self.__get_parameter__('spotify_client_secret', ''),
+            'refresh_token': self.__get_parameter__('spotify_refresh_token', ''),
+            'device_id': self.__get_parameter__('spotify_device_id', ''),
+            'queue_playlist_id': self.__get_parameter__(
+                'spotify_queue_playlist_id', ''),
+            'podcasts': spotify_podcasts_raw if isinstance(
+                spotify_podcasts_raw, list) else json.loads(spotify_podcasts_raw),
+            'queue_uris': self.__get_parameter__('spotify_queue_uris', []),
+        }
+
+    def set_spotify_queue(self, uris):
+        """Persist the pre-built Spotify episode URIs for later playback."""
+        self.__set_parameter__('spotify_queue_uris', uris, 'list')
+        self.spotify['queue_uris'] = uris
 
     def update_tier_info(self, tier, account_id):
         """
