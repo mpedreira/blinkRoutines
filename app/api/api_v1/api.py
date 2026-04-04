@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from .endpoints import arm, disarm, get_image, get_local_video, update_owl, update_thumb
 from .endpoints import get_basic_config, send_2fa, telegram, save_images, get_remote_video
 from .endpoints import detect_person, register_face, list_faces
-from .endpoints import train_face, upload_face, delete_face, play_music
+from .endpoints import train_face, upload_face, delete_face
 
 
 router = APIRouter()
@@ -42,5 +42,3 @@ router.include_router(upload_face.router,
                       prefix="/upload_face", tags=["Detection"])
 router.include_router(delete_face.router,
                       prefix="/delete_face", tags=["Detection"])
-router.include_router(play_music.router,
-                      prefix="/play_music", tags=["Music"])
