@@ -159,3 +159,41 @@ class PersonDetectorRekognition(PersonDetector):
             'faces': faces,
             'face_count': len(faces)
         }
+
+    def delete_face(self, person_name):
+        """
+            Deletes all faces registered under the given person name.
+
+        Args:
+            person_name (str): Name of the person to remove
+
+        Returns:
+            dict: Result with 'is_ok' and 'deleted_count'
+        """
+        try:
+            all_faces = self.client.list_faces(
+                CollectionId=self.collection_id,
+                MaxResults=100
+            )
+        except ClientError as err:
+            return {'is_ok': False, 'deleted_count': 0, 'error': str(err)}
+
+        face_ids = [
+            f['FaceId']
+            for f in all_faces.get('Faces', [])
+            if f.get('ExternalImageId') == person_name
+        ]
+
+        if not face_ids:
+            return {'is_ok': False, 'deleted_count': 0,
+                    'error': f"No faces found for '{person_name}'"}
+
+        try:
+            self.client.delete_faces(
+                CollectionId=self.collection_id,
+                FaceIds=face_ids
+            )
+        except ClientError as err:
+            return {'is_ok': False, 'deleted_count': 0, 'error': str(err)}
+
+        return {'is_ok': True, 'deleted_count': len(face_ids), 'person_name': person_name}
