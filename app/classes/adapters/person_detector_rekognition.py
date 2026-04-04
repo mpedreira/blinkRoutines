@@ -23,21 +23,20 @@ class PersonDetectorRekognition(PersonDetector):
             config (class): Basic configuration with AWS credentials
         """
         super().__init__(config)
-        try:
-            key_id = config.auth.get('aws_access_key_id', '')
-            secret = config.auth.get('aws_secret_access_key', '')
-            region = config.auth.get('region_name', 'us-east-1')
-            if key_id and secret:
-                self.client = boto3.client(
-                    'rekognition',
-                    aws_access_key_id=key_id,
-                    aws_secret_access_key=secret,
-                    region_name=region
-                )
-            else:
-                self.client = boto3.client('rekognition', region_name=region)
-        except KeyError:
-            self.client = boto3.client('rekognition')
+        key_id = config.auth.get('aws_access_key_id', '')
+        secret = config.auth.get('aws_secret_access_key', '')
+        region = config.auth.get('region_name', 'us-east-1')
+        if not key_id or not secret:
+            raise ValueError(
+                "AWS credentials not configured. "
+                "Set aws_access_key_id and aws_secret_access_key in config.ini."
+            )
+        self.client = boto3.client(
+            'rekognition',
+            aws_access_key_id=key_id,
+            aws_secret_access_key=secret,
+            region_name=region
+        )
         self._ensure_collection()
 
     def _ensure_collection(self):

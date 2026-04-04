@@ -3,7 +3,8 @@ This file contains the endpoint to detect persons from a camera image.
 """
 # pylint: disable=E0401,R0801,E0611
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
+from time import sleep
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
@@ -12,7 +13,7 @@ from app.classes.adapters.person_detector_rekognition import PersonDetectorRekog
 from app.classes.person_detector import UNKNOWN_PERSON
 
 EMPTY = ""
-CLIP_WINDOW_MINUTES = 15
+THUMB_WAIT_SECONDS = 5
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ router = APIRouter()
 @router.get("/{channel_id}/{cam_name}")
 def detect_person(channel_id: str, cam_name: str):
     """
-        Gets the thumbnail from the most recent clip of a camera,
+        Forces a new thumbnail on the camera, waits for it to be ready,
         runs face detection, and sends the result to a Telegram channel.
 
     Args:
@@ -40,9 +41,7 @@ def detect_person(channel_id: str, cam_name: str):
     blink_instance.__set_token__()
     blink_instance.get_server()
 
-    path = get_clip_thumb(blink_instance, cam['id'])
-    if not path:
-        path = get_current_thumb(blink_instance, cam['id'], cam['type'])
+    path = get_fresh_thumb(blink_instance, cam['id'], cam['type'])
     if not path:
         return {"status_code": 404, "is_ok": False,
                 "response": f"Could not get thumbnail for '{cam_name}'"}
@@ -57,40 +56,24 @@ def detect_person(channel_id: str, cam_name: str):
     return telegram_instance.send_image_from_bytes(thumb, channel_id)
 
 
-def get_clip_thumb(blink_instance, camera_id):
+def get_fresh_thumb(blink_instance, camera_id, cam_type):
     """
-        Gets the thumbnail of the most recent clip for a camera
-        within the last CLIP_WINDOW_MINUTES minutes.
+    Forces a new thumbnail capture then reads it from the homescreen.
+    Uses set_owl_thumbnail for owl devices, set_thumbnail for cameras.
 
     Args:
-        blink_instance (class): Blink API instance
-        camera_id (str): Camera id
-
-    Returns:
-        str: Thumbnail path from the clip, or empty string if none found
-    """
-    now = datetime.now(timezone.utc) - timedelta(minutes=CLIP_WINDOW_MINUTES)
-    since = now.strftime(
-        '%Y-%m-%dT%H:%M:%S+0000').replace(':', '%3A').replace('+', '%2B')
-    response = blink_instance.get_video_events(since)
-    for clip in response.get('response', {}).get('media', []):
-        if clip.get('device_id') == int(camera_id):
-            return clip.get('thumbnail', EMPTY)
-    return EMPTY
-
-
-def get_current_thumb(blink_instance, camera_id, cam_type):
-    """
-        Fallback: gets the current homescreen thumbnail without forcing a refresh.
-
-    Args:
-        blink_instance (class): Blink API instance
+        blink_instance: Blink API instance
         camera_id (str): Camera id
         cam_type (str): 'cam' or 'owl'
 
     Returns:
-        str: Thumbnail path
+        str: Thumbnail path, or empty string if not found
     """
+    if cam_type == 'owl':
+        blink_instance.set_owl_thumbnail(camera_id)
+    else:
+        blink_instance.set_thumbnail(camera_id)
+    sleep(THUMB_WAIT_SECONDS)
     response = blink_instance.get_home_screen_info()
     key = 'cameras' if cam_type == 'cam' else 'owls'
     for device in response['response'].get(key, []):

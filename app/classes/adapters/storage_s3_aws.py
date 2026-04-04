@@ -22,19 +22,20 @@ class StorageS3AWS (Storage):
         """
         self.config = config
         self.bucket = self.config.bucket
-        try:
-            self.auth = {}
-            self.auth['aws_access_key_id'] = self.config.auth['aws_access_key_id']
-            self.auth['aws_secret_access_key'] = self.config.auth['aws_secret_access_key']
-            self.auth['region_name'] = self.config.auth['region_name']
-            self.s3 = boto3.client(
-                's3',
-                aws_access_key_id=self.auth['aws_access_key_id'],
-                aws_secret_access_key=self.auth['aws_secret_access_key'],
-                region_name=self.auth['region_name']
+        key_id = self.config.auth.get('aws_access_key_id', '')
+        secret = self.config.auth.get('aws_secret_access_key', '')
+        region = self.config.auth.get('region_name', 'us-east-1')
+        if not key_id or not secret:
+            raise ValueError(
+                "AWS credentials not configured. "
+                "Set aws_access_key_id and aws_secret_access_key in config.ini."
             )
-        except KeyError:
-            self.s3 = boto3.client('s3')
+        self.s3 = boto3.client(
+            's3',
+            aws_access_key_id=key_id,
+            aws_secret_access_key=secret,
+            region_name=region
+        )
 
     def put_object(self, file_data, file_key):
         """
