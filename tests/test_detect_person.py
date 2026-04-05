@@ -2,7 +2,6 @@
 Tests for detect_person endpoint — mocked Blink, Rekognition and Telegram.
 """
 # pylint: disable=E0401
-import pytest
 from unittest.mock import MagicMock, patch
 from app.api.api_v1.endpoints.detect_person import build_message, get_fresh_thumb
 from app.classes.person_detector import UNKNOWN_PERSON

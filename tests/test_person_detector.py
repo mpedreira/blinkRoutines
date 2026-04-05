@@ -1,9 +1,9 @@
 """
 Tests for PersonDetectorRekognition — mocked Rekognition client.
 """
-# pylint: disable=E0401
-import pytest
+# pylint: disable=E0401,W0621
 from unittest.mock import MagicMock, patch
+import pytest
 from botocore.exceptions import ClientError
 from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 from app.classes.person_detector import UNKNOWN_PERSON

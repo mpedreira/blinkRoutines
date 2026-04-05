@@ -1,12 +1,12 @@
 """
 Tests for ConfigAWS — no AWS credentials required.
 """
-# pylint: disable=C0301,E0401,W0611
+# pylint: disable=C0301,E0401,W0621
 import json
 import random
 import string
 import pytest
-from unittest.mock import patch, mock_open
+import app.classes.adapters.config_aws as config_aws_mod
 from app.classes.adapters.config_aws import ConfigAWS
 
 
@@ -41,8 +41,7 @@ def cfg(tmp_path, monkeypatch):
     """ConfigAWS backed by a temp file, no real disk side-effects."""
     cfg_file = tmp_path / "config.ini"
     cfg_file.write_text(MINIMAL_CONFIG)
-    import app.classes.adapters.config_aws as mod
-    monkeypatch.setattr(mod, "CONFIGFILE", str(cfg_file))
+    monkeypatch.setattr(config_aws_mod, "CONFIGFILE", str(cfg_file))
     return ConfigAWS()
 
 
