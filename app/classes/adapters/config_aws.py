@@ -99,6 +99,10 @@ class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
             self.__set_parameter__('blink_refresh_token',
                                    refresh_token, "String")
             self.session['REFRESH_TOKEN'] = refresh_token
+        client_id = response.get('client_id')
+        if client_id:
+            self.__set_parameter__('blink_client_id', str(client_id), "String")
+            self.session['CLIENT_ID'] = str(client_id)
         return True
 
     def save_oauth_state(self, code_verifier, csrf_token, cookies):

@@ -35,4 +35,5 @@ def send_2fa(mfa_code: int):
     response['TOKEN_AUTH'] = result['response'].get('access_token', '')
     response['TIER'] = config_instance.session.get('TIER', '')
     response['ACCOUNT_ID'] = config_instance.session.get('ACCOUNT_ID', '')
+    response['CLIENT_ID'] = config_instance.session.get('CLIENT_ID', '')
     return response
