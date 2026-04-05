@@ -145,7 +145,7 @@ class PersonDetectorRekognition(PersonDetector):
         """
         # Labels that appear when the Roborock Q80 is visible in frame
         # (calibrated empirically: absent in baseline shots, present with robot)
-        _VACUUM_LABELS = {"electrical device", "switch"}
+        vacuum_labels = {"electrical device", "switch"}
         try:
             response = self.client.detect_labels(
                 Image={'Bytes': image_bytes},
@@ -159,7 +159,7 @@ class PersonDetectorRekognition(PersonDetector):
             label['Name'].lower()
             for label in response.get('Labels', [])
         }
-        return bool(detected & _VACUUM_LABELS)
+        return bool(detected & vacuum_labels)
 
     def list_faces(self):
         """
