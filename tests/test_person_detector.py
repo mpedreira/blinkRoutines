@@ -13,6 +13,7 @@ from app.classes.person_detector import UNKNOWN_PERSON
 
 @pytest.fixture
 def mock_config():
+    """Minimal config mock with fake AWS credentials."""
     cfg = MagicMock()
     cfg.auth = {
         'aws_access_key_id': 'FAKE',
@@ -24,6 +25,7 @@ def mock_config():
 
 @pytest.fixture
 def detector(mock_config):
+    """PersonDetectorRekognition with a fully mocked boto3 Rekognition client."""
     with patch('boto3.client') as mock_boto:
         mock_client = MagicMock()
         mock_boto.return_value = mock_client
@@ -39,11 +41,13 @@ def detector(mock_config):
 # ── detect_faces ──────────────────────────────────────────────────────────────
 
 def test_detect_faces_returns_empty_when_no_faces(detector):
+    """Returns empty list when Rekognition finds no faces in the image."""
     detector.client.detect_faces.return_value = {'FaceDetails': []}
     assert detector.detect_faces(b'img') == []
 
 
 def test_detect_faces_returns_known_person(detector):
+    """Returns the matched name and confidence for a face in the collection."""
     detector.client.detect_faces.return_value = {'FaceDetails': [{}]}
     detector.client.search_faces_by_image.return_value = {
         'FaceMatches': [
@@ -55,6 +59,7 @@ def test_detect_faces_returns_known_person(detector):
 
 
 def test_detect_faces_returns_unknown_when_no_match(detector):
+    """Returns UNKNOWN_PERSON when the face is not in the collection."""
     detector.client.detect_faces.return_value = {'FaceDetails': [{}]}
     detector.client.search_faces_by_image.return_value = {'FaceMatches': []}
     result = detector.detect_faces(b'img')
@@ -76,6 +81,7 @@ def test_detect_faces_keeps_only_best_match_per_face(detector):
 
 
 def test_detect_faces_handles_rekognition_error(detector):
+    """Returns empty list when Rekognition raises a ClientError."""
     detector.client.detect_faces.side_effect = ClientError(
         {'Error': {'Code': 'InvalidImageFormatException'}}, 'DetectFaces'
     )
@@ -100,6 +106,7 @@ def test_detect_faces_two_real_people(detector):
 # ── detect_vacuum ─────────────────────────────────────────────────────────────
 
 def test_detect_vacuum_returns_true_when_electrical_device_present(detector):
+    """Returns True when 'Electrical Device' label is detected above threshold."""
     detector.client.detect_labels.return_value = {
         'Labels': [
             {'Name': 'Electrical Device', 'Confidence': 79.8},
@@ -110,6 +117,7 @@ def test_detect_vacuum_returns_true_when_electrical_device_present(detector):
 
 
 def test_detect_vacuum_returns_true_when_switch_present(detector):
+    """Returns True when 'Switch' label is detected above threshold."""
     detector.client.detect_labels.return_value = {
         'Labels': [
             {'Name': 'Switch',  'Confidence': 79.8},
@@ -120,6 +128,7 @@ def test_detect_vacuum_returns_true_when_switch_present(detector):
 
 
 def test_detect_vacuum_returns_false_without_vacuum_labels(detector):
+    """Returns False when neither vacuum label is present in the response."""
     detector.client.detect_labels.return_value = {
         'Labels': [
             {'Name': 'Indoors', 'Confidence': 99.9},
@@ -131,6 +140,7 @@ def test_detect_vacuum_returns_false_without_vacuum_labels(detector):
 
 
 def test_detect_vacuum_returns_false_on_rekognition_error(detector):
+    """Returns False when Rekognition raises a ClientError."""
     detector.client.detect_labels.side_effect = ClientError(
         {'Error': {'Code': 'InvalidImageFormatException'}}, 'DetectLabels'
     )
