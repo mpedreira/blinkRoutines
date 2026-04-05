@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Lambda build artifacts
+*.zip
+*.xapk
+*.apk
+
 *static.py
 # Distribution / packaging
 .Python

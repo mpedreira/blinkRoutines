@@ -80,8 +80,12 @@ class PersonDetectorRekognition(PersonDetector):
         except ClientError:
             return [{'name': UNKNOWN_PERSON, 'confidence': 0}] * face_count
 
+        # FaceMatches contains all collection candidates for the same detected
+        # face, sorted by similarity descending. Keep only the best match per
+        # detected face to avoid reporting sibling lookalikes as separate people.
+        best_match = search_response.get('FaceMatches', [])[:1]
         matched_names = []
-        for match in search_response.get('FaceMatches', []):
+        for match in best_match:
             matched_names.append({
                 'name': match['Face']['ExternalImageId'],
                 'confidence': round(match['Face']['Confidence'], 2)
@@ -125,6 +129,37 @@ class PersonDetectorRekognition(PersonDetector):
             'faces_indexed': indexed,
             'person_name': person_name
         }
+
+    def detect_vacuum(self, image_bytes, min_confidence=70):
+        """
+        Uses Rekognition label detection to decide whether the moving
+        object in the image is a robot vacuum cleaner.
+
+        Args:
+            image_bytes (bytes): Thumbnail to analyse.
+            min_confidence (float): Minimum label confidence (0-100).
+
+        Returns:
+            bool: True if a vacuum / robot cleaner label is found above the
+                  confidence threshold, False otherwise.
+        """
+        # Labels that appear when the Roborock Q80 is visible in frame
+        # (calibrated empirically: absent in baseline shots, present with robot)
+        _VACUUM_LABELS = {"electrical device", "switch"}
+        try:
+            response = self.client.detect_labels(
+                Image={'Bytes': image_bytes},
+                MaxLabels=20,
+                MinConfidence=min_confidence,
+            )
+        except ClientError:
+            return False
+
+        detected = {
+            label['Name'].lower()
+            for label in response.get('Labels', [])
+        }
+        return bool(detected & _VACUUM_LABELS)
 
     def list_faces(self):
         """
