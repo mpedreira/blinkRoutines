@@ -848,7 +848,14 @@ class BlinkAPI (Blink):
             network_id + '/camera/' + camera_id + '/thumbnail'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
+        status_code = WAIT_CODE
+        retries = MAX_RETRIES
+        while status_code == WAIT_CODE and retries > 0:
+            http_instance.post_request()
+            status_code = http_instance.response.status_code
+            retries -= 1
+            if status_code == WAIT_CODE:
+                sleep(1)
         return self.__get_response_to_request__(http_instance)
 
     def set_owl_thumbnail(self, owl_id):
@@ -870,5 +877,12 @@ class BlinkAPI (Blink):
             '/networks/' + network_id + '/owls/' + owl_id + '/thumbnail'
         endpoint['certificate'] = False
         http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.post_request()
+        status_code = WAIT_CODE
+        retries = MAX_RETRIES
+        while status_code == WAIT_CODE and retries > 0:
+            http_instance.post_request()
+            status_code = http_instance.response.status_code
+            retries -= 1
+            if status_code == WAIT_CODE:
+                sleep(1)
         return self.__get_response_to_request__(http_instance)

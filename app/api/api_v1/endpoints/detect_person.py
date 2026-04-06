@@ -13,7 +13,7 @@ from app.classes.adapters.person_detector_rekognition import PersonDetectorRekog
 from app.classes.person_detector import UNKNOWN_PERSON, FACE_CONFIDENCE_THRESHOLD
 
 EMPTY = ""
-THUMB_WAIT_SECONDS = 5
+THUMB_WAIT_SECONDS = 20
 
 router = APIRouter()
 
@@ -42,6 +42,9 @@ def detect_person(channel_id: str, cam_name: str):
     blink_instance.get_server()
 
     path = get_fresh_thumb(blink_instance, cam['id'], cam['type'])
+    if path is None:
+        return {"status_code": 429, "is_ok": False,
+                "response": f"Blink no ha podido actualizar el thumbnail de '{cam_name}', posible throttling"}
     if not path:
         return {"status_code": 404, "is_ok": False,
                 "response": f"Could not get thumbnail for '{cam_name}'"}
@@ -67,12 +70,15 @@ def get_fresh_thumb(blink_instance, camera_id, cam_type):
         cam_type (str): 'cam' or 'owl'
 
     Returns:
-        str: Thumbnail path, or empty string if not found
+        str | None: Thumbnail path, empty string if not found in homescreen,
+                    or None if the trigger request was rejected by Blink.
     """
     if cam_type == 'owl':
-        blink_instance.set_owl_thumbnail(camera_id)
+        trigger = blink_instance.set_owl_thumbnail(camera_id)
     else:
-        blink_instance.set_thumbnail(camera_id)
+        trigger = blink_instance.set_thumbnail(camera_id)
+    if not trigger.get('is_ok'):
+        return None
     sleep(THUMB_WAIT_SECONDS)
     response = blink_instance.get_home_screen_info()
     key = 'cameras' if cam_type == 'cam' else 'owls'
