@@ -44,11 +44,12 @@ class TelegramApi(Telegram):
         basepath = self.config.endpoints['TELEGRAM_BASEPATH']
         payload = self.__prepare_http_request__()
         endpoint = {}
-        endpoint[
-            'uri'] = basepath + token + "/sendMessage" + "?chat_id=" + channel + "&text=" + message
+        endpoint['uri'] = basepath + token + "/sendMessage"
         endpoint['certificate'] = False
+        payload['headers'] = {'Content-Type': 'application/json'}
+        payload['data'] = json.dumps({'chat_id': channel, 'text': message})
         http_instance = HttpRequestStandard(endpoint, payload)
-        http_instance.get_request()
+        http_instance.post_request()
         return json.loads(http_instance.response.text)
 
     def send_image_from_bytes(self, image, channel):

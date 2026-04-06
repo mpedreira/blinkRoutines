@@ -4,7 +4,7 @@
 # pylint: disable=E0401,R0801
 import boto3
 from botocore.exceptions import ClientError
-from app.classes.person_detector import PersonDetector, UNKNOWN_PERSON
+from app.classes.person_detector import PersonDetector, UNKNOWN_PERSON, FACE_CONFIDENCE_THRESHOLD
 
 
 class PersonDetectorRekognition(PersonDetector):
@@ -74,7 +74,7 @@ class PersonDetectorRekognition(PersonDetector):
             search_response = self.client.search_faces_by_image(
                 CollectionId=self.collection_id,
                 Image={'Bytes': image_bytes},
-                FaceMatchThreshold=80,
+                FaceMatchThreshold=FACE_CONFIDENCE_THRESHOLD,
                 MaxFaces=10
             )
         except ClientError:
@@ -144,8 +144,8 @@ class PersonDetectorRekognition(PersonDetector):
                   confidence threshold, False otherwise.
         """
         # Labels that appear when the Roborock Q80 is visible in frame
-        # (calibrated empirically: absent in baseline shots, present with robot)
-        vacuum_labels = {"electrical device", "switch"}
+        vacuum_labels = {"vacuum cleaner",
+                         "robot", "appliance", "home appliance"}
         try:
             response = self.client.detect_labels(
                 Image={'Bytes': image_bytes},

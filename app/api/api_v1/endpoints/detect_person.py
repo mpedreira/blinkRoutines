@@ -10,7 +10,7 @@ from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
 from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
-from app.classes.person_detector import UNKNOWN_PERSON
+from app.classes.person_detector import UNKNOWN_PERSON, FACE_CONFIDENCE_THRESHOLD
 
 EMPTY = ""
 THUMB_WAIT_SECONDS = 5
@@ -104,7 +104,7 @@ def build_message(cam_name, date, faces):
     for face in faces:
         name = face['name']
         confidence = face['confidence']
-        if name == UNKNOWN_PERSON or confidence < 80:
+        if name == UNKNOWN_PERSON or confidence < FACE_CONFIDENCE_THRESHOLD:
             unknown_count += 1
             continue
         if name not in best_by_name or confidence > best_by_name[name]:

@@ -4,6 +4,7 @@
 """Module for person detection"""
 
 UNKNOWN_PERSON = "Otra persona"
+FACE_CONFIDENCE_THRESHOLD = 80
 
 
 class PersonDetector():
