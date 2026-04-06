@@ -6,7 +6,39 @@
 import os
 import shutil
 import json
+import boto3
+from botocore.exceptions import ClientError
 from app.classes.config import Config
+
+_SSM_TOKEN_PARAMS = {'blink_token_auth', 'blink_refresh_token'}
+_SSM_PREFIX = '/blink_'
+
+
+def _ssm_client():
+    return boto3.client('ssm', region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+
+
+def _ssm_get(key):
+    """Read a token from SSM Parameter Store. Returns None on any error."""
+    try:
+        response = _ssm_client().get_parameter(
+            Name=f'/{key}')
+        return response['Parameter']['Value']
+    except ClientError:
+        return None
+
+
+def _ssm_put(key, value):
+    """Write a token to SSM Parameter Store as SecureString. Silently fails locally."""
+    try:
+        _ssm_client().put_parameter(
+            Name=f'/{key}',
+            Value=value,
+            Type='String',
+            Overwrite=True
+        )
+    except ClientError:
+        pass
 
 # Bundled read-only copy (inside the zip in Lambda, or repo root locally)
 _BASE_DIR = os.path.dirname(os.path.dirname(
@@ -52,10 +84,10 @@ class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
         self.session['ACCOUNT_ID'] = self.__get_parameter__(
             'blink_account_id', '')
         self.session['CLIENT_NAME'] = 'Lambda AWS'
-        self.session['TOKEN_AUTH'] = self.__get_parameter__(
-            'blink_token_auth')
-        self.session['REFRESH_TOKEN'] = self.__get_parameter__(
-            'blink_refresh_token')
+        self.session['TOKEN_AUTH'] = (
+            _ssm_get('blink_token_auth') or self.__get_parameter__('blink_token_auth'))
+        self.session['REFRESH_TOKEN'] = (
+            _ssm_get('blink_refresh_token') or self.__get_parameter__('blink_refresh_token'))
         self.session['CLIENT_ID'] = self.__get_parameter__(
             'blink_client_id', '')
         self.auth['TELEGRAM_API'] = self.__get_parameter__(
@@ -93,11 +125,13 @@ class ConfigAWS (Config):  # pylint: disable=too-many-instance-attributes
         """
         access_token = response['access_token']
         self.__set_parameter__('blink_token_auth', access_token, "String")
+        _ssm_put('blink_token_auth', access_token)
         self.session['TOKEN_AUTH'] = access_token
         refresh_token = response.get('refresh_token')
         if refresh_token:
             self.__set_parameter__('blink_refresh_token',
                                    refresh_token, "String")
+            _ssm_put('blink_refresh_token', refresh_token)
             self.session['REFRESH_TOKEN'] = refresh_token
         client_id = response.get('client_id')
         if client_id:
