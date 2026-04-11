@@ -43,8 +43,10 @@ def detect_person(channel_id: str, cam_name: str):
 
     path = get_fresh_thumb(blink_instance, cam['id'], cam['type'])
     if path is None:
+        response = f"Blink no ha podido actualizar el thumbnail de ' + \
+            {cam_name}', posible throttling"
         return {"status_code": 429, "is_ok": False,
-                "response": f"Blink no ha podido actualizar el thumbnail de '{cam_name}', posible throttling"}
+                "response": response}
     if not path:
         return {"status_code": 404, "is_ok": False,
                 "response": f"Could not get thumbnail for '{cam_name}'"}
