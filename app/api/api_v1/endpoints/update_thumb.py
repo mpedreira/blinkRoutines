@@ -24,4 +24,4 @@ def update_thumb(camera: int):
     blink_instance = BlinkAPI(config_instance)
     blink_instance.__set_token__()
     blink_instance.get_server()
-    return {"item_id": blink_instance.set_thumbnail(str(camera))}
+    return blink_instance.set_thumbnail(str(camera))

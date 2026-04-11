@@ -841,21 +841,42 @@ class BlinkAPI (Blink):
             the response of the server(blank if has no json format) and if is_success
         """
         network_id = self.__get_newtwork_id_from_camera__(camera_id)
+        if not network_id:
+            return {
+                'status_code': 404,
+                'is_ok': False,
+                'response': {
+                    'message': f"Camera '{camera_id}' not found"
+                }
+            }
         payload = self.__prepare_http_request__()
         payload['headers']['Authorization'] = "Bearer " + self.token_auth
-        endpoint = {}
-        endpoint['uri'] = self.server + '/network/' + \
-            network_id + '/camera/' + camera_id + '/thumbnail'
-        endpoint['certificate'] = False
-        http_instance = HttpRequestStandard(endpoint, payload)
-        status_code = WAIT_CODE
-        retries = MAX_RETRIES
-        while status_code == WAIT_CODE and retries > 0:
-            http_instance.post_request()
-            status_code = http_instance.response.status_code
-            retries -= 1
-            if status_code == WAIT_CODE:
-                sleep(1)
+        endpoint_uris = [
+            self.server + '/api/v1/accounts/' + self.account_id +
+            '/networks/' + network_id + '/cameras/' + camera_id + '/thumbnail',
+            self.server + '/network/' + network_id + '/camera/' + camera_id + '/thumbnail'
+        ]
+
+        http_instance = None
+        for endpoint_uri in endpoint_uris:
+            endpoint = {
+                'uri': endpoint_uri,
+                'certificate': False
+            }
+            http_instance = HttpRequestStandard(endpoint, payload)
+            status_code = WAIT_CODE
+            retries = MAX_RETRIES
+            while status_code == WAIT_CODE and retries > 0:
+                http_instance.post_request()
+                status_code = http_instance.response.status_code
+                retries -= 1
+                if status_code == WAIT_CODE:
+                    sleep(1)
+
+            # Fallback only when endpoint is not found.
+            if status_code != 404:
+                break
+
         return self.__get_response_to_request__(http_instance)
 
     def set_owl_thumbnail(self, owl_id):

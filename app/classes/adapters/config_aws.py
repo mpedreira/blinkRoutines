@@ -7,7 +7,12 @@ import os
 import shutil
 import json
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import (
+    BotoCoreError,
+    ClientError,
+    NoCredentialsError,
+    PartialCredentialsError,
+)
 from app.classes.config import Config
 
 _SSM_TOKEN_PARAMS = {'blink_token_auth', 'blink_refresh_token'}
@@ -24,7 +29,7 @@ def _ssm_get(key):
         response = _ssm_client().get_parameter(
             Name=f'/{key}')
         return response['Parameter']['Value']
-    except ClientError:
+    except (ClientError, NoCredentialsError, PartialCredentialsError, BotoCoreError):
         return None
 
 
@@ -37,7 +42,7 @@ def _ssm_put(key, value):
             Type='String',
             Overwrite=True
         )
-    except ClientError:
+    except (ClientError, NoCredentialsError, PartialCredentialsError, BotoCoreError):
         pass
 
 # Bundled read-only copy (inside the zip in Lambda, or repo root locally)
