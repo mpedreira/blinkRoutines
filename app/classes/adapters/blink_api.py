@@ -152,6 +152,76 @@ class BlinkAPI (Blink):
         payload['auth'] = ''
         return payload
 
+    @staticmethod
+    def _normalize_enabled_value(value):
+        """Normalize a Blink network state value into a boolean when possible."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {'armed', 'enabled', 'on', 'active', 'true', '1'}:
+                return True
+            if normalized in {'disarmed', 'disabled', 'off', 'inactive', 'false', '0'}:
+                return False
+        return None
+
+    @classmethod
+    def _extract_network_enabled_state(cls, network):
+        """Extract the enabled/armed state from a homescreen network dict."""
+        direct_fields = (
+            'armed',
+            'is_armed',
+            'enabled',
+            'is_enabled',
+            'armed_state',
+            'arm_state',
+            'status',
+        )
+        for field in direct_fields:
+            if field in network:
+                normalized = cls._normalize_enabled_value(network[field])
+                if normalized is not None:
+                    return normalized, field
+
+        nested_fields = ('state', 'network_state', 'arm')
+        nested_value_fields = ('status', 'armed', 'enabled', 'value')
+        for field in nested_fields:
+            nested = network.get(field)
+            if not isinstance(nested, dict):
+                continue
+            for nested_field in nested_value_fields:
+                if nested_field in nested:
+                    normalized = cls._normalize_enabled_value(nested[nested_field])
+                    if normalized is not None:
+                        return normalized, f'{field}.{nested_field}'
+
+        return None, None
+
+    def get_network_status(self, network_id):
+        """Return the enabled/armed status for one network from homescreen data."""
+        for network in self.get_networks():
+            if str(network.get('id')) != str(network_id):
+                continue
+
+            enabled, source = self._extract_network_enabled_state(network)
+            result = {
+                'network_id': str(network_id),
+                'name': network.get('name', ''),
+                'enabled': enabled,
+                'state_source': source,
+            }
+            if enabled is None:
+                result['message'] = 'Unable to determine network state from Blink response'
+            return result
+
+        return {
+            'network_id': str(network_id),
+            'enabled': None,
+            'message': f"Network '{network_id}' not found",
+        }
+
     def arm_network(self, network_id):
         """
             Set to arm one network

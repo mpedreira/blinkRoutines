@@ -9,6 +9,7 @@ from .endpoints import arm, disarm, get_image, get_local_video, update_owl, upda
 from .endpoints import get_basic_config, send_2fa, telegram, save_images, get_remote_video
 from .endpoints import detect_person, register_face, list_faces
 from .endpoints import train_face, upload_face, delete_face
+from .endpoints import network_status
 from .endpoints import (
     detect_person_azure,
     register_face_azure,
@@ -36,6 +37,8 @@ router.include_router(update_owl.router,
                       prefix="/update_owl", tags=["Owl"])
 router.include_router(arm.router, prefix="/arm", tags=["Network"])
 router.include_router(disarm.router, prefix="/disarm", tags=["Network"])
+router.include_router(network_status.router,
+                      prefix="/network_status", tags=["Network"])
 router.include_router(telegram.router, prefix="/telegram", tags=["Network"])
 router.include_router(get_local_video.router,
                       prefix="/get_local_video", tags=["Camera"])

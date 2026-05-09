@@ -193,7 +193,20 @@ Returns the access token and persists it to config for future automatic renewal.
 |--------|------|-------------|
 | `GET` | `/api/v1/arm/{network_id}` | Arm a network |
 | `GET` | `/api/v1/disarm/{network_id}` | Disarm a network |
+| `GET` | `/api/v1/network_status/{network_id}` | Return whether a network is enabled/armed |
 | `GET` | `/api/v1/telegram/{channel_id}?message=…` | Send a Telegram message |
+
+Example:
+
+```bash
+curl -s "https://<api-id>.execute-api.<region>.amazonaws.com/prod/api/v1/network_status/12345"
+```
+
+Typical response:
+
+```json
+{"network_id":"12345","name":"Casa","enabled":true,"state_source":"armed"}
+```
 
 ### Camera
 
