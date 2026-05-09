@@ -5,7 +5,6 @@ This file contains the endpoint to delete all faces registered under a person na
 
 from fastapi import APIRouter
 from app.classes.adapters.config_aws import ConfigAWS
-from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 
 router = APIRouter()
 
@@ -22,6 +21,8 @@ def delete_face(person_name: str):
     Returns:
         dict: Result with deleted_count
     """
+    from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
+
     config_instance = ConfigAWS()
     detector = PersonDetectorRekognition(config_instance)
     return detector.delete_face(person_name)

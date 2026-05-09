@@ -5,7 +5,6 @@ This file contains the endpoint to register a face by uploading an image file.
 
 from fastapi import APIRouter, File, UploadFile
 from app.classes.adapters.config_aws import ConfigAWS
-from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 
 router = APIRouter()
 
@@ -22,6 +21,8 @@ async def upload_face(person_name: str, image: UploadFile = File(...)):
     Returns:
         dict: Registration result
     """
+    from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
+
     contents = await image.read()
     if not contents:
         return {"status_code": 400, "is_ok": False,

@@ -7,7 +7,6 @@ from datetime import datetime
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
-from app.classes.adapters.storage_s3_aws import StorageS3AWS
 
 
 router = APIRouter()
@@ -25,6 +24,8 @@ def get_images(cam_name: str):
         dict : This responses a json with the status_code, 
         the response of the server(blank if has no json format) and if is_success
     """
+    from app.classes.adapters.storage_s3_aws import StorageS3AWS
+
     config_instance = ConfigAWS()
     cam_array = config_instance.cameras
     blink_instance = BlinkAPI(config_instance)

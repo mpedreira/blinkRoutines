@@ -6,7 +6,6 @@ using Azure Face API.
 
 from fastapi import APIRouter
 from app.classes.adapters.config_azure import ConfigAzure
-from app.classes.adapters.person_detector_azure import PersonDetectorAzure
 
 router = APIRouter()
 
@@ -23,6 +22,8 @@ def delete_face_azure(person_name: str):
     Returns:
         dict: Result with deleted_count
     """
+    from app.classes.adapters.person_detector_azure import PersonDetectorAzure
+
     config_instance = ConfigAzure()
     detector = PersonDetectorAzure(config_instance)
     return detector.delete_face(person_name)

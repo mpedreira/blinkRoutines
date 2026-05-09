@@ -7,7 +7,6 @@ from time import sleep
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_azure import ConfigAzure
-from app.classes.adapters.person_detector_azure import PersonDetectorAzure
 
 EMPTY = ""
 
@@ -16,6 +15,8 @@ router = APIRouter()
 
 @router.post("/{person_name}/{cam_name}")
 def register_face_azure(person_name: str, cam_name: str):
+    from app.classes.adapters.person_detector_azure import PersonDetectorAzure
+
     config_instance = ConfigAzure()
     cam_array = config_instance.cameras
     cam = cam_array.get(cam_name)

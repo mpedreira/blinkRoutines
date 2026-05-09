@@ -9,7 +9,6 @@ from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
 from app.classes.adapters.telegram_api import TelegramApi
-from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 from app.classes.person_detector import UNKNOWN_PERSON, FACE_CONFIDENCE_THRESHOLD
 
 EMPTY = ""
@@ -31,6 +30,8 @@ def detect_person(channel_id: str, cam_name: str):
     Returns:
         dict: Telegram API response
     """
+    from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
+
     config_instance = ConfigAWS()
     cam = config_instance.cameras.get(cam_name)
     if not cam or not cam.get('id'):

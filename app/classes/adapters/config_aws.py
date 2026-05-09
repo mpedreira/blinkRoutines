@@ -6,13 +6,6 @@
 import os
 import shutil
 import json
-import boto3
-from botocore.exceptions import (
-    BotoCoreError,
-    ClientError,
-    NoCredentialsError,
-    PartialCredentialsError,
-)
 from app.classes.config import Config
 
 _SSM_TOKEN_PARAMS = {'blink_token_auth', 'blink_refresh_token'}
@@ -20,29 +13,39 @@ _SSM_PREFIX = '/blink_'
 
 
 def _ssm_client():
+    try:
+        import boto3
+    except ModuleNotFoundError:
+        return None
     return boto3.client('ssm', region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
 
 
 def _ssm_get(key):
     """Read a token from SSM Parameter Store. Returns None on any error."""
     try:
-        response = _ssm_client().get_parameter(
+        client = _ssm_client()
+        if client is None:
+            return None
+        response = client.get_parameter(
             Name=f'/{key}')
         return response['Parameter']['Value']
-    except (ClientError, NoCredentialsError, PartialCredentialsError, BotoCoreError):
+    except Exception:
         return None
 
 
 def _ssm_put(key, value):
     """Write a token to SSM Parameter Store as SecureString. Silently fails locally."""
     try:
-        _ssm_client().put_parameter(
+        client = _ssm_client()
+        if client is None:
+            return
+        client.put_parameter(
             Name=f'/{key}',
             Value=value,
             Type='String',
             Overwrite=True
         )
-    except (ClientError, NoCredentialsError, PartialCredentialsError, BotoCoreError):
+    except Exception:
         pass
 
 # Bundled read-only copy (inside the zip in Lambda, or repo root locally)

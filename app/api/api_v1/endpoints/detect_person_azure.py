@@ -9,7 +9,6 @@ from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_azure import ConfigAzure
 from app.classes.adapters.telegram_api import TelegramApi
-from app.classes.adapters.person_detector_azure import PersonDetectorAzure
 from app.classes.person_detector import UNKNOWN_PERSON, FACE_CONFIDENCE_THRESHOLD
 
 EMPTY = ""
@@ -20,6 +19,8 @@ router = APIRouter()
 
 @router.get("/{channel_id}/{cam_name}")
 def detect_person_azure(channel_id: str, cam_name: str):
+    from app.classes.adapters.person_detector_azure import PersonDetectorAzure
+
     config_instance = ConfigAzure()
     cam = config_instance.cameras.get(cam_name)
     if not cam or not cam.get('id'):

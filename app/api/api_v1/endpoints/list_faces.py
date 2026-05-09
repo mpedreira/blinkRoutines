@@ -5,7 +5,6 @@ This file contains the endpoint to list registered faces in the collection.
 
 from fastapi import APIRouter
 from app.classes.adapters.config_aws import ConfigAWS
-from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 
 router = APIRouter()
 
@@ -18,6 +17,8 @@ def list_faces():
     Returns:
         dict: Collection info with face_count and faces list
     """
+    from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
+
     config_instance = ConfigAWS()
     detector = PersonDetectorRekognition(config_instance)
     return detector.list_faces()

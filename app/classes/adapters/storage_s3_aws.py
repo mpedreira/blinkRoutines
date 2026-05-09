@@ -2,7 +2,6 @@
     StorageS3AWS class
 """
 # pylint: disable=E0401,R0801
-import boto3
 from app.classes.storage import Storage
 
 
@@ -30,6 +29,12 @@ class StorageS3AWS (Storage):
                 "AWS credentials not configured. "
                 "Set aws_access_key_id and aws_secret_access_key in config.ini."
             )
+        try:
+            import boto3
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "boto3 is required only for S3 storage endpoints but is not installed."
+            ) from exc
         self.s3 = boto3.client(
             's3',
             aws_access_key_id=key_id,

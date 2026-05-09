@@ -7,7 +7,6 @@ from time import sleep
 from fastapi import APIRouter
 from app.classes.adapters.blink_api import BlinkAPI
 from app.classes.adapters.config_aws import ConfigAWS
-from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
 
 EMPTY = ""
 
@@ -27,6 +26,8 @@ def register_face(person_name: str, cam_name: str):
     Returns:
         dict: Registration result
     """
+    from app.classes.adapters.person_detector_rekognition import PersonDetectorRekognition
+
     config_instance = ConfigAWS()
     cam_array = config_instance.cameras
     cam = cam_array.get(cam_name)

@@ -11,19 +11,39 @@ from .endpoints import detect_person, register_face, list_faces
 from .endpoints import train_face, upload_face, delete_face
 from .endpoints import network_status
 from .endpoints import (
-    detect_person_azure,
-    register_face_azure,
-    list_faces_azure,
-    upload_face_azure,
-    delete_face_azure,
-)
-from .endpoints import (
     detect_person_facepp,
     register_face_facepp,
     list_faces_facepp,
     upload_face_facepp,
     delete_face_facepp,
 )
+
+
+def _include_azure_routers(router):
+    """Register Azure routes only when the optional Azure SDK is installed."""
+    try:
+        from .endpoints import (
+            detect_person_azure,
+            register_face_azure,
+            list_faces_azure,
+            upload_face_azure,
+            delete_face_azure,
+        )
+    except ModuleNotFoundError as exc:
+        if exc.name and exc.name.startswith("azure"):
+            return
+        raise
+
+    router.include_router(detect_person_azure.router,
+                          prefix="/v2/detect_person", tags=["Detection v2"])
+    router.include_router(register_face_azure.router,
+                          prefix="/v2/register_face", tags=["Detection v2"])
+    router.include_router(list_faces_azure.router,
+                          prefix="/v2/list_faces", tags=["Detection v2"])
+    router.include_router(upload_face_azure.router,
+                          prefix="/v2/upload_face", tags=["Detection v2"])
+    router.include_router(delete_face_azure.router,
+                          prefix="/v2/delete_face", tags=["Detection v2"])
 
 
 router = APIRouter()
@@ -59,16 +79,7 @@ router.include_router(upload_face.router,
                       prefix="/upload_face", tags=["Detection"])
 router.include_router(delete_face.router,
                       prefix="/delete_face", tags=["Detection"])
-router.include_router(detect_person_azure.router,
-                      prefix="/v2/detect_person", tags=["Detection v2"])
-router.include_router(register_face_azure.router,
-                      prefix="/v2/register_face", tags=["Detection v2"])
-router.include_router(list_faces_azure.router,
-                      prefix="/v2/list_faces", tags=["Detection v2"])
-router.include_router(upload_face_azure.router,
-                      prefix="/v2/upload_face", tags=["Detection v2"])
-router.include_router(delete_face_azure.router,
-                      prefix="/v2/delete_face", tags=["Detection v2"])
+_include_azure_routers(router)
 router.include_router(detect_person_facepp.router,
                       prefix="/v3/detect_person", tags=["Detection v3"])
 router.include_router(register_face_facepp.router,
