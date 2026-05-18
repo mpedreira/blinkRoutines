@@ -28,11 +28,14 @@ _LOGGER = logging.getLogger(__name__)
 class BlinkRoutinesCoordinator(DataUpdateCoordinator[dict]):
     """Coordinator that polls the blinkRoutines API and reads devices from JSON."""
 
+    _FAILURE_TOLERANCE = 3  # raise UpdateFailed only after this many consecutive errors
+
     def __init__(self, hass: HomeAssistant, config_entry) -> None:
         self.api_url: str = config_entry.data[CONF_API_URL].rstrip("/")
         self.network_id: str = config_entry.data[CONF_NETWORK_ID]
         self.telegram_channel: str = config_entry.data[CONF_TELEGRAM_CHANNEL]
         self.cameras: list[dict] = []
+        self._consecutive_failures: int = 0
         interval_minutes: int = config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
         super().__init__(
@@ -65,9 +68,20 @@ class BlinkRoutinesCoordinator(DataUpdateCoordinator[dict]):
                     resp.raise_for_status()
                     payload: dict = await resp.json()
         except (aiohttp.ClientError, TimeoutError) as err:
+            self._consecutive_failures += 1
+            if self.data is not None and self._consecutive_failures < self._FAILURE_TOLERANCE:
+                _LOGGER.warning(
+                    "blinkRoutines API unreachable (attempt %d/%d), returning cached data: %s",
+                    self._consecutive_failures,
+                    self._FAILURE_TOLERANCE,
+                    err,
+                )
+                return self.data
             raise UpdateFailed(
                 f"Error communicating with blinkRoutines API: {err}"
             ) from err
+
+        self._consecutive_failures = 0
 
         return {
             "armed": bool(payload.get("enabled")),
