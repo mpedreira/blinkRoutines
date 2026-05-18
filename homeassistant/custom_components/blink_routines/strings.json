@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Blink Routines",
+        "description": "Introduce los datos de conexión. Genera primero blink_devices.json con el prescript `generate_config.py` en el servidor del API.",
+        "data": {
+          "api_url": "URL del API de blinkRoutines (ej. http://192.168.1.100:8000)",
+          "network_id": "ID de la red Blink",
+          "telegram_channel_id": "ID del canal de Telegram",
+          "scan_interval": "Intervalo de actualización (minutos)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar con el API. Comprueba la URL y el network_id.",
+      "file_not_found": "No se encontró el fichero blink_devices.json en la ruta indicada.",
+      "invalid_devices_file": "El fichero blink_devices.json no es válido o no contiene cámaras."
+    },
+    "abort": {
+      "already_configured": "Esta red de Blink ya está configurada."
+    }
+  }
+}

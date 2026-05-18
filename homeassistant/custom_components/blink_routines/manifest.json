@@ -1,0 +1,9 @@
+{
+  "domain": "blink_routines",
+  "name": "Blink Routines",
+  "version": "1.0.0",
+  "config_flow": true,
+  "documentation": "https://github.com/manuelpa/blinkRoutines",
+  "iot_class": "local_polling",
+  "requirements": []
+}
