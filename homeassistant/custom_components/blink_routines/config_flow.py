@@ -10,10 +10,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_AGENTS_API_URL,
     CONF_API_URL,
+    CONF_LAST_VIDEO_WAIT_SECONDS,
+    CONF_MIN_CONFIDENCE,
     CONF_NETWORK_ID,
     CONF_SCAN_INTERVAL,
     CONF_TELEGRAM_CHANNEL,
+    DEFAULT_AGENTS_API_URL,
+    DEFAULT_LAST_VIDEO_WAIT_SECONDS,
+    DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -21,11 +27,20 @@ from .const import (
 STEP_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_API_URL): str,
+        vol.Optional(CONF_AGENTS_API_URL, default=DEFAULT_AGENTS_API_URL): str,
         vol.Required(CONF_NETWORK_ID): str,
         vol.Required(CONF_TELEGRAM_CHANNEL): str,
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             vol.Coerce(int), vol.Range(min=1)
         ),
+        vol.Optional(
+            CONF_LAST_VIDEO_WAIT_SECONDS,
+            default=DEFAULT_LAST_VIDEO_WAIT_SECONDS,
+        ): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        vol.Optional(
+            CONF_MIN_CONFIDENCE,
+            default=DEFAULT_MIN_CONFIDENCE,
+        ): vol.All(vol.Coerce(int), vol.Range(min=0, max=100)),
     }
 )
 

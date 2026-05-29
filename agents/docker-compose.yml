@@ -1,0 +1,18 @@
+services:
+  blink-agents:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blink-agents
+    ports:
+      - "8010:8010"
+    environment:
+      AGENTS_DATA_DIR: /data
+      AGENTS_TMP_DIR: /tmp/agents
+      DEEPFACE_MODEL_NAME: Facenet512
+      DEEPFACE_DETECTOR_BACKEND: retinaface
+      VIDEO_SAMPLE_FPS: "1.0"
+      MIN_CONFIDENCE: "70.0"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

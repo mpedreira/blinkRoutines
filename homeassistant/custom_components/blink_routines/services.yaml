@@ -1,0 +1,57 @@
+detect_video_faces:
+  name: Detectar caras en video
+  description: Consulta /api/v1/network_status. Si enabled es true espera y descarga video; si enabled es false usa thumbnail y detecta por imagen en agents.
+  fields:
+    cam_name:
+      name: Nombre de camara
+      description: Nombre configurado de la camara Blink
+      required: true
+      selector:
+        text:
+    sample_fps:
+      name: FPS de muestreo
+      description: Numero de frames por segundo a analizar
+      required: false
+      default: 1.0
+      selector:
+        number:
+          min: 0.1
+          max: 10
+          step: 0.1
+    min_confidence:
+      name: Confianza minima
+      description: Umbral minimo de coincidencia (0-100)
+      required: false
+      default: 70
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+
+register_video_face:
+  name: Registrar cara desde video
+  description: Consulta /api/v1/network_status. Si enabled es true espera y descarga video; si enabled es false usa thumbnail para registrar por imagen en agents.
+  fields:
+    cam_name:
+      name: Nombre de camara
+      description: Nombre configurado de la camara Blink
+      required: true
+      selector:
+        text:
+    person_name:
+      name: Nombre de la persona
+      description: Identificador para guardar los embeddings
+      required: true
+      selector:
+        text:
+    sample_fps:
+      name: FPS de muestreo
+      description: Numero de frames por segundo a analizar
+      required: false
+      default: 1.0
+      selector:
+        number:
+          min: 0.1
+          max: 10
+          step: 0.1

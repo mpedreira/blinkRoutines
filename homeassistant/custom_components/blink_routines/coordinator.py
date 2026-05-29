@@ -12,10 +12,15 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import os
 
 from .const import (
+    CONF_AGENTS_API_URL,
     CONF_API_URL,
+    CONF_LAST_VIDEO_WAIT_SECONDS,
+    CONF_MIN_CONFIDENCE,
     CONF_NETWORK_ID,
     CONF_SCAN_INTERVAL,
     CONF_TELEGRAM_CHANNEL,
+    DEFAULT_LAST_VIDEO_WAIT_SECONDS,
+    DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -32,8 +37,23 @@ class BlinkRoutinesCoordinator(DataUpdateCoordinator[dict]):
 
     def __init__(self, hass: HomeAssistant, config_entry) -> None:
         self.api_url: str = config_entry.data[CONF_API_URL].rstrip("/")
+        self.agents_api_url: str = config_entry.data.get(CONF_AGENTS_API_URL, "").rstrip("/")
+        if not self.agents_api_url:
+            self.agents_api_url = self.api_url
         self.network_id: str = config_entry.data[CONF_NETWORK_ID]
         self.telegram_channel: str = config_entry.data[CONF_TELEGRAM_CHANNEL]
+        self.last_video_wait_seconds: int = int(
+            config_entry.data.get(
+                CONF_LAST_VIDEO_WAIT_SECONDS,
+                DEFAULT_LAST_VIDEO_WAIT_SECONDS,
+            )
+        )
+        self.min_confidence: float = float(
+            config_entry.data.get(
+                CONF_MIN_CONFIDENCE,
+                DEFAULT_MIN_CONFIDENCE,
+            )
+        )
         self.cameras: list[dict] = []
         self._consecutive_failures: int = 0
         interval_minutes: int = config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -84,7 +104,7 @@ class BlinkRoutinesCoordinator(DataUpdateCoordinator[dict]):
         self._consecutive_failures = 0
 
         return {
-            "armed": bool(payload.get("enabled")),
+            "armed": payload.get("enabled") is True,
             "network_name": payload.get("name", f"Red {self.network_id}"),
             "cameras": self.cameras,
         }

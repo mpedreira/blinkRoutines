@@ -1,0 +1,6 @@
+fastapi>=0.115.6
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+deepface>=0.0.93
+imageio-ffmpeg>=0.6.0
+tf-keras>=2.21.0

@@ -9,6 +9,7 @@ REST API deployed on AWS Lambda to automate Blink security cameras: arm/disarm n
 - **OAuth 2.0 PKCE authentication** against the Blink API (2FA support)
 - **Arm / disarm** camera networks
 - **Thumbnail & video retrieval** sent directly to Telegram channels
+- **Local video download endpoint** (`/api/v2/get_local_video/{cam_name}`) for direct MP4 retrieval
 - **Save images** to S3 with timestamped keys
 - **Person detection** via Amazon Rekognition Face Collections
 - **Face registration** from live thumbnails or uploaded images
@@ -218,6 +219,7 @@ Typical response:
 | `GET` | `/api/v1/update_owl/{owl_id}` | Force a new thumbnail on an Owl device |
 | `GET` | `/api/v1/get_local_video/{channel_id}/{cam_name}` | Send latest local video via Telegram |
 | `GET` | `/api/v1/get_remote_video/{channel_id}/{cam_name}` | Send latest cloud video via Telegram |
+| `GET` | `/api/v2/get_local_video/{cam_name}` | Download latest local video clip as MP4 attachment |
 
 ### Detection
 
@@ -229,6 +231,32 @@ Typical response:
 | `POST` | `/api/v1/upload_face/{person_name}` | Register face from uploaded image (`multipart/form-data`, field `image`) |
 | `GET` | `/api/v1/list_faces` | List all registered faces |
 | `DELETE` | `/api/v1/delete_face/{person_name}` | Delete all faces for a person |
+
+### Agents (Docker service)
+
+This repository includes an additional FastAPI service under `agents/` that uses
+`ffmpeg` + `DeepFace` for video-based face workflows.
+
+Endpoints (inside the agents service):
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Healthcheck |
+| `GET` | `/api/v2/list_faces` | List known people in local embeddings DB |
+| `POST` | `/api/v2/register_face/{person_name}` | Register/train person from uploaded video |
+| `POST` | `/api/v2/detect_person` | Detect known people from uploaded video |
+
+Run locally:
+
+```bash
+cd agents
+docker compose up --build
+```
+
+Service URL by default: `http://localhost:8010`.
+
+The Home Assistant integration can call this service directly using the new
+`agents_api_url` configuration field.
 
 ### Music
 
