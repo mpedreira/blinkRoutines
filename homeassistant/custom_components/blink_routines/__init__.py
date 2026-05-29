@@ -23,7 +23,7 @@ from .const import (
     SERVICE_DETECT_VIDEO_FACES,
     SERVICE_REGISTER_VIDEO_FACE,
 )
-from .coordinator import BlinkRoutinesCoordinator
+from .coordinator import BlinkRoutinesCoordinator, _DEVICES_PATH
 
 PLATFORMS = ["switch", "button"]
 _SERVICES_REGISTERED_KEY = "_services_registered"
